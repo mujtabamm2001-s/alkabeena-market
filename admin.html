@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم ماركت الكابينة</title>
+    <title>لوحة تحكم الكابينة سنتر</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -19,7 +19,7 @@
     <div id="login-screen" class="min-h-screen flex items-center justify-center p-4 navy-bg">
         <div class="bg-white w-full max-w-md rounded-3xl p-7 shadow-2xl border-b-8 border-yellow-400">
             <div class="text-center mb-6">
-                <h1 class="text-2xl font-black text-blue-900">🔐 لوحة إدارة ماركت الكابينة</h1>
+                <h1 class="text-2xl font-black text-blue-900">🔐 لوحة إدارة الكابينة سنتر</h1>
                 <p class="text-xs text-gray-500 font-bold mt-1">دخول الإدارة الأساسية أو فريق العمل</p>
             </div>
 
@@ -51,7 +51,7 @@
         <header class="navy-bg text-white p-5 shadow-lg border-b-4 border-yellow-400">
             <div class="max-w-6xl mx-auto flex flex-wrap justify-between items-center gap-3">
                 <div>
-                    <h1 class="text-xl font-black text-yellow-400">⚙️ لوحة تحكم ماركت الكابينة</h1>
+                    <h1 class="text-xl font-black text-yellow-400">⚙️ لوحة تحكم الكابينة سنتر</h1>
                     <p class="text-xs text-white/80 font-bold mt-0.5">
                         المستخدم: <span id="current-user-label" class="text-yellow-300"></span> | الصلاحية: <span id="current-role-label" class="underline"></span>
                     </p>
@@ -80,7 +80,7 @@
                         <input type="hidden" id="edit-product-id">
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">اسم المادة</label>
-                            <input type="text" id="prod-name" required placeholder="مثال: رز عنبر 5 كغم" class="w-full p-3 rounded-xl border font-bold text-sm">
+                            <input type="text" id="prod-name" required placeholder="مثال: طقم حافظات منزلية" class="w-full p-3 rounded-xl border font-bold text-sm">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">السعر (د.ع)</label>
@@ -88,7 +88,7 @@
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">القسم</label>
-                            <input type="text" id="prod-cat" list="categories-datalist" required placeholder="مواد غذائية، ألبان، منظفات..." class="w-full p-3 rounded-xl border font-bold text-sm">
+                            <input type="text" id="prod-cat" list="categories-datalist" required placeholder="مواد منزلية، كهربائيات، مفروشات..." class="w-full p-3 rounded-xl border font-bold text-sm">
                             <datalist id="categories-datalist"></datalist>
                         </div>
                         <div>
@@ -151,7 +151,7 @@
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">رقم الواتساب لاستقبال الطلبات (بدون +)</label>
-                        <input type="text" id="set-whatsapp" placeholder="9647760982880" class="w-full p-3 rounded-xl border font-bold text-sm">
+                        <input type="text" id="set-whatsapp" placeholder="9647821465582" class="w-full p-3 rounded-xl border font-bold text-sm">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">رسالة الترحيب في المساعد الذكي</label>
@@ -159,7 +159,7 @@
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">عبارات الشريط المتحرك العلوي (افصل بين العبارات بـ | أو سطر جديد)</label>
-                        <textarea id="set-ticker-messages" rows="3" placeholder="مثال: 🚚 توصيل سريع داخل كربلاء | ⭐ عروض يومية مستمرة | ✏️ إمكانية تعديل الطلب بسهولة" class="w-full p-3 rounded-xl border font-bold text-sm"></textarea>
+                        <textarea id="set-ticker-messages" rows="3" placeholder="مثال: 🏠 الكابينة سنتر — الناصرية: الإسكان الصناعي، النزلة الأولى، مقابل جامع الإسكان الكبير | ⭐ مواد منزلية ومنفذ متكامل" class="w-full p-3 rounded-xl border font-bold text-sm"></textarea>
                     </div>
                     <div class="flex items-center gap-3">
                         <input type="checkbox" id="set-store-open" class="w-5 h-5">
@@ -209,9 +209,12 @@
         const OWNER_EMAIL = "mujtaba.mm85@gmail.com";
         const CLOUDINARY_CLOUD_NAME = "rd9c0zmh";
         const CLOUDINARY_UPLOAD_PRESET = "alkabeena_products";
+        const DEFAULT_STORE_NAME = "الكابينة سنتر | للتسوق المنزلي";
+        const DEFAULT_WHATSAPP = "9647821465582";
+        const DEFAULT_BOT_WELCOME = "يا هلا بيك في الكابينة سنتر للتسوق المنزلي! شلون أكدر أساعدك اليوم؟ 😊";
         const DEFAULT_TICKER_MESSAGES = [
-            "🚚 توصيل سريع داخل كربلاء — ماركت الكابينة",
-            "⭐ تسوق بذكاء وسهولة — مواد غذائية ومنزلية متكاملة",
+            "🏠 الكابينة سنتر — الناصرية: الإسكان الصناعي، النزلة الأولى، مقابل جامع الإسكان الكبير",
+            "⭐ مواد منزلية ومنفذ متكامل — تسوق بذكاء وسهولة",
             "✏️ إمكانية تعديل طلبك بسهولة بعد التأكيد"
         ];
 
@@ -594,9 +597,9 @@
         function listenSettings() {
             onSnapshot(doc(db, "settings", "store"), (snap) => {
                 const d = snap.exists() ? snap.data() : {};
-                document.getElementById('set-store-name').value = d.storeName || "ماركت الكابينة";
-                document.getElementById('set-whatsapp').value = d.whatsapp || "9647760982880";
-                document.getElementById('set-bot-welcome').value = d.botWelcome || "يا هلا بيك بماركت الكابينة! شلون أكدر أساعدك اليوم؟ 😊";
+                document.getElementById('set-store-name').value = d.storeName || DEFAULT_STORE_NAME;
+                document.getElementById('set-whatsapp').value = d.whatsapp || DEFAULT_WHATSAPP;
+                document.getElementById('set-bot-welcome').value = d.botWelcome || DEFAULT_BOT_WELCOME;
                 const tickerArr = Array.isArray(d.tickerMessages) && d.tickerMessages.length
                     ? d.tickerMessages
                     : DEFAULT_TICKER_MESSAGES;
@@ -613,9 +616,9 @@
                 .filter(Boolean);
 
             await setDoc(doc(db, "settings", "store"), {
-                storeName: document.getElementById('set-store-name').value.trim() || "ماركت الكابينة",
-                whatsapp: document.getElementById('set-whatsapp').value.trim() || "9647760982880",
-                botWelcome: document.getElementById('set-bot-welcome').value.trim(),
+                storeName: document.getElementById('set-store-name').value.trim() || DEFAULT_STORE_NAME,
+                whatsapp: document.getElementById('set-whatsapp').value.trim() || DEFAULT_WHATSAPP,
+                botWelcome: document.getElementById('set-bot-welcome').value.trim() || DEFAULT_BOT_WELCOME,
                 tickerMessages: parsedTicker.length ? parsedTicker : DEFAULT_TICKER_MESSAGES,
                 isOpen: document.getElementById('set-store-open').checked
             }, { merge: true });
