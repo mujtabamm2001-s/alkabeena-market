@@ -44,10 +44,15 @@
         <p class="text-white/80 text-sm mt-1 font-bold">تسوق بذكاء وسهولة</p>
         <p id="closed-banner" class="hidden mt-3 inline-block bg-red-600 text-white text-xs font-black px-4 py-1.5 rounded-full">المتجر مغلق مؤقتاً لاستقبال الطلبات</p>
 
-        <div class="max-w-[280px] mx-auto mt-6 bg-white/10 py-4 rounded-[25px] flex justify-center items-center gap-10 border border-white/5 backdrop-blur-sm">
-            <a id="wa-header-link" href="https://wa.me/9647760982880" target="_blank" class="text-white text-3xl opacity-90"><i class="fab fa-whatsapp"></i></a>
-            <a href="https://www.instagram.com/alkabeena.krb?igsh=MXZhYmNiNDBiZ2ZpNA%3D%3D&utm_source=qr" target="_blank" class="text-white text-3xl opacity-90"><i class="fab fa-instagram"></i></a>
-            <a href="https://www.facebook.com/share/1C6dsU2642/?mibextid=wwXIfr" target="_blank" class="text-white text-3xl opacity-90"><i class="fab fa-facebook"></i></a>
+        <div class="max-w-[320px] mx-auto mt-6 bg-white/10 py-4 px-3 rounded-[25px] flex justify-center items-center gap-6 border border-white/5 backdrop-blur-sm">
+            <a id="wa-header-link" href="https://wa.me/9647760982880" target="_blank" class="text-white text-2xl opacity-90 hover:text-yellow-300 transition"><i class="fab fa-whatsapp"></i></a>
+            <a href="https://www.instagram.com/alkabeena.krb?igsh=MXZhYmNiNDBiZ2ZpNA%3D%3D&utm_source=qr" target="_blank" class="text-white text-2xl opacity-90 hover:text-yellow-300 transition"><i class="fab fa-instagram"></i></a>
+            <a href="https://www.facebook.com/share/1C6dsU2642/?mibextid=wwXIfr" target="_blank" class="text-white text-2xl opacity-90 hover:text-yellow-300 transition"><i class="fab fa-facebook"></i></a>
+            <button onclick="openMyOrdersModal()" class="relative bg-yellow-400 text-blue-900 px-3.5 py-1.5 rounded-xl text-xs font-black shadow flex items-center gap-1.5 active:scale-95 transition">
+                <i class="fas fa-receipt"></i>
+                <span>طلباتي</span>
+                <span id="my-orders-badge" class="bg-blue-900 text-yellow-300 text-[10px] px-1.5 py-0.5 rounded-full">0</span>
+            </button>
         </div>
     </header>
 
@@ -96,27 +101,83 @@
         </div>
     </div>
 
+    <!-- شريط السلة العائم -->
     <div id="cart-float" class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[92%] max-w-md bg-blue-900 text-white p-5 rounded-[30px] shadow-2xl flex justify-between items-center hidden z-50">
         <div class="flex items-center gap-4">
             <div class="bg-yellow-400 text-blue-900 w-12 h-12 rounded-full flex items-center justify-center font-black text-xl shadow-lg" id="cart-count">0</div>
-            <p class="text-xl font-bold"><span id="total-price">0</span> د.ع</p>
+            <div>
+                <p class="text-xl font-bold"><span id="total-price">0</span> د.ع</p>
+                <p id="editing-cart-banner" class="hidden text-[11px] text-yellow-300 font-bold">وضع تعديل طلب سابق</p>
+            </div>
         </div>
-        <button onclick="openModal()" class="bg-yellow-400 text-blue-900 px-8 py-3 rounded-2xl font-black active:scale-95 transition">اطلب الآن</button>
+        <button onclick="openModal()" class="bg-yellow-400 text-blue-900 px-6 py-3 rounded-2xl font-black active:scale-95 transition">السلة / اطلب</button>
     </div>
 
+    <!-- نافذة السلة وتأكيد الطلب -->
     <div id="order-modal" class="fixed inset-0 bg-black/70 z-[80] hidden flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-sm rounded-[35px] p-6 shadow-2xl text-right">
-            <h2 class="text-2xl font-bold text-blue-900 text-center mb-4 border-b pb-2">تأكيد الطلب 📋</h2>
-            <div id="cart-summary" class="mb-4 max-h-40 overflow-y-auto text-sm space-y-2 border-b border-dashed pb-4 px-1 font-bold"></div>
-            <input type="text" id="cust-address" placeholder="📍 العنوان ورقم الهاتف" class="w-full p-4 bg-gray-50 rounded-2xl border-2 border-gray-100 mb-4 text-right font-bold outline-none focus:border-blue-900">
-            <div class="text-2xl font-black text-blue-900 flex justify-between items-center bg-yellow-50 p-3 rounded-2xl mb-4">
+        <div class="bg-white w-full max-w-md rounded-[35px] p-6 shadow-2xl text-right max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-3 border-b pb-2">
+                <h2 id="modal-title" class="text-xl font-black text-blue-900">السلة وتأكيد الطلب 📋</h2>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-700 text-2xl font-bold leading-none">×</button>
+            </div>
+
+            <div id="editing-order-notice" class="hidden mb-3 bg-yellow-100 border border-yellow-400 text-blue-900 p-2.5 rounded-2xl text-xs font-black flex justify-between items-center">
+                <span>✏️ أنت الآن تعدّل على طلبك السابق</span>
+                <button type="button" onclick="cancelEditMode()" class="underline text-red-600">إلغاء التعديل</button>
+            </div>
+
+            <div id="cart-summary" class="mb-4 max-h-48 overflow-y-auto text-sm space-y-2 border-b border-dashed pb-3 px-1 font-bold"></div>
+
+            <div class="space-y-3 mb-4">
+                <div>
+                    <label class="block text-xs font-black text-blue-900 mb-1">📍 العنوان (مطلوب حصراً)</label>
+                    <input type="text" id="cust-address" required placeholder="مثال: كربلاء - حي الصمود - قرب..." class="w-full p-3.5 bg-gray-50 rounded-2xl border-2 border-gray-200 text-right font-bold text-sm outline-none focus:border-blue-900">
+                </div>
+                <div>
+                    <label class="block text-xs font-black text-blue-900 mb-1">📞 رقم الهاتف (مطلوب حصراً)</label>
+                    <input type="tel" id="cust-phone" required placeholder="مثال: 07700000000" class="w-full p-3.5 bg-gray-50 rounded-2xl border-2 border-gray-200 text-right font-bold text-sm outline-none focus:border-blue-900">
+                </div>
+                <p id="order-form-error" class="text-red-600 text-xs font-black hidden bg-red-50 p-2.5 rounded-xl border border-red-200"></p>
+            </div>
+
+            <div class="text-xl font-black text-blue-900 flex justify-between items-center bg-yellow-50 p-3.5 rounded-2xl mb-4">
                 <span>الإجمالي:</span>
                 <span><span id="final-price">0</span> د.ع</span>
             </div>
-            <div class="flex gap-3">
-                <button onclick="closeModal()" class="flex-1 py-4 bg-gray-100 rounded-2xl font-bold">رجوع</button>
-                <button onclick="sendToWhatsApp()" class="flex-[2] py-4 bg-green-600 text-white rounded-2xl font-bold shadow-lg">إرسال عبر واتساب 📲</button>
+
+            <div class="flex gap-2.5">
+                <button type="button" onclick="closeModal()" class="flex-1 py-3.5 bg-gray-100 text-gray-800 rounded-2xl font-black text-sm">متابعة التسوق</button>
+                <button type="button" id="confirm-order-btn" onclick="confirmOrder()" class="flex-[2] py-3.5 bg-blue-900 text-yellow-400 rounded-2xl font-black text-sm shadow-lg hover:bg-blue-800 transition">تأكيد الطلب ✅</button>
             </div>
+        </div>
+    </div>
+
+    <!-- نافذة نجاح تأكيد الطلب -->
+    <div id="success-modal" class="fixed inset-0 bg-black/75 z-[85] hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-sm rounded-[35px] p-6 shadow-2xl text-center border-b-8 border-yellow-400">
+            <div class="w-16 h-16 mx-auto bg-green-100 text-green-600 rounded-full flex items-center justify-center text-3xl mb-3">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h2 class="text-2xl font-black text-blue-900 mb-1">تم تأكيد الطلب بنجاح</h2>
+            <p class="text-xs font-bold text-gray-500 mb-3">رقم الطلب: <span id="confirmed-order-code" class="text-blue-900 font-black"></span></p>
+            <div id="confirmed-order-details" class="bg-slate-50 border rounded-2xl p-3 text-right text-xs font-bold text-slate-700 space-y-1.5 mb-4 max-h-40 overflow-y-auto"></div>
+            <div class="flex flex-col gap-2">
+                <button type="button" onclick="startEditOrderFromSuccess()" class="w-full py-3 bg-yellow-400 text-blue-900 rounded-2xl font-black text-sm shadow">✏️ تعديل الطلب</button>
+                <button type="button" onclick="openMyOrdersFromSuccess()" class="w-full py-3 bg-blue-900 text-white rounded-2xl font-black text-sm">📦 عرض طلباتي ومتابعتها</button>
+                <button type="button" onclick="closeSuccessModal()" class="w-full py-2.5 bg-gray-100 text-gray-700 rounded-2xl font-bold text-xs">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة سجل طلبات الزبون (طلباتي) -->
+    <div id="my-orders-modal" class="fixed inset-0 bg-black/70 z-[82] hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-md rounded-[35px] p-6 shadow-2xl text-right max-h-[88vh] flex flex-col">
+            <div class="flex justify-between items-center mb-3 border-b pb-2">
+                <h2 class="text-xl font-black text-blue-900">📦 طلباتي</h2>
+                <button onclick="closeMyOrdersModal()" class="text-gray-400 hover:text-gray-700 text-2xl font-bold leading-none">×</button>
+            </div>
+            <p class="text-xs font-bold text-gray-500 mb-3">يمكنك مراجعة طلباتك، تعديلها من السلة، أو إلغاء الطلبات قيد الانتظار.</p>
+            <div id="my-orders-list" class="space-y-3 overflow-y-auto flex-1 pr-0.5"></div>
         </div>
     </div>
 
@@ -126,7 +187,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-        import { getFirestore, collection, doc, onSnapshot, addDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, onSnapshot, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAqhKx_pxcaY_ZBOas8TrvYWwxY_2nqTjY",
@@ -141,8 +202,23 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        const LOCAL_ORDERS_KEY = "alkabeena_customer_order_ids";
         let allProducts = [], cart = {}, currentCategory = 'الكل';
         let storeConfig = { storeName: "ماركت الكابينة", whatsapp: "9647760982880", isOpen: true };
+        let savedOrderIds = JSON.parse(localStorage.getItem(LOCAL_ORDERS_KEY) || "[]");
+        let liveOrdersMap = {};
+        let editingOrderId = null;
+        let lastConfirmedOrderId = null;
+
+        function persistSavedOrderIds() {
+            localStorage.setItem(LOCAL_ORDERS_KEY, JSON.stringify(savedOrderIds));
+            updateMyOrdersBadge();
+        }
+
+        function updateMyOrdersBadge() {
+            document.getElementById('my-orders-badge').textContent = savedOrderIds.length;
+        }
+        updateMyOrdersBadge();
 
         window.toggleChat = function() {
             document.getElementById('chat-window').classList.toggle('hidden');
@@ -198,6 +274,17 @@
             render();
         });
 
+        onSnapshot(collection(db, "orders"), (snap) => {
+            const updatedMap = {};
+            snap.docs.forEach(d => {
+                updatedMap[d.id] = { id: d.id, ...d.data() };
+            });
+            liveOrdersMap = updatedMap;
+            if (!document.getElementById('my-orders-modal').classList.contains('hidden')) {
+                renderMyOrdersList();
+            }
+        });
+
         window.render = function() {
             const q = document.getElementById('searchInput').value.toLowerCase();
             const grid = document.getElementById('items-grid');
@@ -236,13 +323,18 @@
         };
 
         window.updateQty = function(n, c, p) {
-            if (!cart[n] && c > 0) cart[n] = { qty: 0, price: p };
+            const productObj = allProducts.find(item => item.name === n);
+            const itemPrice = typeof p === "number" ? p : (cart[n] ? cart[n].price : (productObj ? productObj.price : 0));
+            if (!cart[n] && c > 0) cart[n] = { qty: 0, price: itemPrice };
             if (cart[n]) {
                 cart[n].qty += c;
                 if (cart[n].qty <= 0) delete cart[n];
             }
             updateUI();
             render();
+            if (!document.getElementById('order-modal').classList.contains('hidden')) {
+                renderCartSummary();
+            }
         };
 
         function updateUI() {
@@ -252,6 +344,7 @@
             document.getElementById('final-price').innerText = t.toLocaleString();
             document.getElementById('cart-count').innerText = c;
             document.getElementById('cart-float').classList.toggle('hidden', c === 0);
+            document.getElementById('editing-cart-banner').classList.toggle('hidden', !editingOrderId);
         }
 
         window.filterByCategory = function(c) {
@@ -260,10 +353,36 @@
             render();
         };
 
+        function renderCartSummary() {
+            const entries = Object.entries(cart);
+            if (!entries.length) {
+                document.getElementById('cart-summary').innerHTML = '<p class="text-center text-gray-400 py-3">السلة فارغة حالياً. أضف مواد من المتجر أو عدّل الكميات.</p>';
+                return;
+            }
+            document.getElementById('cart-summary').innerHTML = entries.map(([name, info]) => {
+                const sub = info.qty * info.price;
+                return `
+                    <div class="flex justify-between items-center py-2 border-b border-dashed gap-2">
+                        <div class="min-w-0">
+                            <p class="font-black text-slate-800 truncate">${name}</p>
+                            <p class="text-xs text-blue-800">${sub.toLocaleString()} د.ع</p>
+                        </div>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <button type="button" onclick="updateQty('${name.replace(/'/g, "\\'")}', -1)" class="w-7 h-7 bg-red-50 text-red-600 rounded-lg font-black">-</button>
+                            <span class="w-5 text-center font-black text-blue-900">${info.qty}</span>
+                            <button type="button" onclick="updateQty('${name.replace(/'/g, "\\'")}', 1, ${info.price})" class="w-7 h-7 bg-yellow-400 text-blue-900 rounded-lg font-black">+</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
         window.openModal = function() {
-            let h = '';
-            for (let id in cart) h += `<div class="flex justify-between py-2 border-b border-dashed"><span>${(cart[id].qty * cart[id].price).toLocaleString()}</span><span>${id} (×${cart[id].qty})</span></div>`;
-            document.getElementById('cart-summary').innerHTML = h;
+            renderCartSummary();
+            document.getElementById('order-form-error').classList.add('hidden');
+            document.getElementById('editing-order-notice').classList.toggle('hidden', !editingOrderId);
+            document.getElementById('modal-title').textContent = editingOrderId ? "✏️ تعديل الطلب الحالي" : "السلة وتأكيد الطلب 📋";
+            document.getElementById('confirm-order-btn').textContent = editingOrderId ? "تأكيد التعديل ✅" : "تأكيد الطلب ✅";
             document.getElementById('order-modal').classList.remove('hidden');
         };
 
@@ -271,33 +390,215 @@
             document.getElementById('order-modal').classList.add('hidden');
         };
 
-        window.sendToWhatsApp = async function() {
-            const addr = document.getElementById('cust-address').value.trim() || "لم يذكر";
-            let total = 0;
-            const itemsList = [];
-            let msg = `*وصـــل ${storeConfig.storeName}*%0a━━━━━━━━━━━━━━━%0a`;
-            for (let id in cart) {
-                const sub = cart[id].qty * cart[id].price;
-                total += sub;
-                itemsList.push({ name: id, qty: cart[id].qty, price: cart[id].price });
-                msg += `• ${id} (×${cart[id].qty}) = ${sub.toLocaleString()} د.ع%0a`;
+        window.cancelEditMode = function() {
+            editingOrderId = null;
+            cart = {};
+            document.getElementById('cust-address').value = '';
+            document.getElementById('cust-phone').value = '';
+            document.getElementById('editing-order-notice').classList.add('hidden');
+            updateUI();
+            render();
+            closeModal();
+        };
+
+        function showOrderFormError(msg) {
+            const el = document.getElementById('order-form-error');
+            el.textContent = msg;
+            el.classList.remove('hidden');
+        }
+
+        window.confirmOrder = async function() {
+            const addr = document.getElementById('cust-address').value.trim();
+            const phone = document.getElementById('cust-phone').value.trim();
+            document.getElementById('order-form-error').classList.add('hidden');
+
+            const entries = Object.entries(cart);
+            if (!entries.length) {
+                return showOrderFormError("السلة فارغة! أضف مادة واحدة على الأقل قبل تأكيد الطلب.");
             }
-            msg += `━━━━━━━━━━━━━━━%0a*💰 الإجمالي: ${total.toLocaleString()} د.ع*%0a*📍 العنوان:* ${addr}`;
+            if (!addr) {
+                return showOrderFormError("حقل العنوان مطلوب حصراً، يرجى كتابة العنوان.");
+            }
+            if (!phone) {
+                return showOrderFormError("حقل رقم الهاتف مطلوب حصراً، يرجى كتابة رقم الهاتف.");
+            }
+
+            let total = 0;
+            const itemsList = entries.map(([name, info]) => {
+                const sub = info.qty * info.price;
+                total += sub;
+                return { name, qty: info.qty, price: info.price };
+            });
+
+            const combinedAddress = `${addr} | هاتف: ${phone}`;
+            const btn = document.getElementById('confirm-order-btn');
+            btn.disabled = true;
+            btn.textContent = "جاري الحفظ...";
 
             try {
-                await addDoc(collection(db, "orders"), {
-                    items: itemsList,
-                    total,
-                    address: addr,
-                    status: "قيد الانتظار",
-                    createdAt: Date.now()
-                });
+                let activeOrderId = editingOrderId;
+                if (activeOrderId) {
+                    await updateDoc(doc(db, "orders", activeOrderId), {
+                        items: itemsList,
+                        total,
+                        address: combinedAddress,
+                        customerAddress: addr,
+                        customerPhone: phone,
+                        status: "قيد الانتظار",
+                        isEdited: true,
+                        updatedAt: Date.now()
+                    });
+                } else {
+                    const docRef = await addDoc(collection(db, "orders"), {
+                        items: itemsList,
+                        total,
+                        address: combinedAddress,
+                        customerAddress: addr,
+                        customerPhone: phone,
+                        status: "قيد الانتظار",
+                        createdAt: Date.now()
+                    });
+                    activeOrderId = docRef.id;
+                }
+
+                if (!savedOrderIds.includes(activeOrderId)) {
+                    savedOrderIds.unshift(activeOrderId);
+                    persistSavedOrderIds();
+                }
+
+                lastConfirmedOrderId = activeOrderId;
+                editingOrderId = null;
+                cart = {};
+                updateUI();
+                render();
+                closeModal();
+                openSuccessModal(activeOrderId, itemsList, total, addr, phone);
             } catch (e) {
                 console.warn("تعذر حفظ الطلب في Firestore:", e);
+                showOrderFormError("تعذر حفظ الطلب حالياً، تحقق من الاتصال وحاول مرة أخرى.");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "تأكيد الطلب ✅";
+            }
+        };
+
+        function openSuccessModal(orderId, itemsList, total, addr, phone) {
+            document.getElementById('confirmed-order-code').textContent = "#" + orderId.slice(0, 6).toUpperCase();
+            document.getElementById('confirmed-order-details').innerHTML = `
+                <div>📍 العنوان: ${addr}</div>
+                <div>📞 الهاتف: ${phone}</div>
+                <div class="border-t pt-1.5 mt-1.5 space-y-1">
+                    ${itemsList.map(i => `<div>• ${i.name} (×${i.qty}) = ${(i.qty * i.price).toLocaleString()} د.ع</div>`).join('')}
+                </div>
+                <div class="border-t pt-1.5 mt-1.5 text-blue-900 font-black">الإجمالي: ${Number(total).toLocaleString()} د.ع</div>
+            `;
+            document.getElementById('success-modal').classList.remove('hidden');
+        }
+
+        window.closeSuccessModal = function() {
+            document.getElementById('success-modal').classList.add('hidden');
+        };
+
+        window.startEditOrderFromSuccess = function() {
+            const targetId = lastConfirmedOrderId;
+            closeSuccessModal();
+            if (targetId) loadOrderIntoCartForEdit(targetId);
+        };
+
+        window.openMyOrdersFromSuccess = function() {
+            closeSuccessModal();
+            openMyOrdersModal();
+        };
+
+        window.loadOrderIntoCartForEdit = function(orderId) {
+            const order = liveOrdersMap[orderId];
+            if (!order) return alert("تعذر العثور على بيانات هذا الطلب.");
+            if (order.status === "تم التوصيل" || order.status === "ملغي") {
+                return alert("لا يمكن تعديل طلب تم توصيله أو إلغاؤه.");
             }
 
-            window.open(`https://wa.me/${storeConfig.whatsapp}?text=${msg}`);
+            cart = {};
+            (order.items || []).forEach(item => {
+                cart[item.name] = { qty: parseInt(item.qty) || 1, price: parseInt(item.price) || 0 };
+            });
+
+            let extractedAddr = order.customerAddress || "";
+            let extractedPhone = order.customerPhone || "";
+            if (!extractedAddr && order.address) {
+                const parts = String(order.address).split("| هاتف:");
+                extractedAddr = (parts[0] || "").trim();
+                extractedPhone = (parts[1] || "").trim();
+            }
+
+            document.getElementById('cust-address').value = extractedAddr;
+            document.getElementById('cust-phone').value = extractedPhone;
+            editingOrderId = orderId;
+            closeMyOrdersModal();
+            updateUI();
+            render();
+            openModal();
         };
+
+        window.cancelCustomerOrder = async function(orderId) {
+            if (!confirm("هل تريد إلغاء هذا الطلب؟")) return;
+            await updateDoc(doc(db, "orders", orderId), { status: "ملغي", updatedAt: Date.now() });
+            renderMyOrdersList();
+        };
+
+        window.openMyOrdersModal = function() {
+            renderMyOrdersList();
+            document.getElementById('my-orders-modal').classList.remove('hidden');
+        };
+
+        window.closeMyOrdersModal = function() {
+            document.getElementById('my-orders-modal').classList.add('hidden');
+        };
+
+        function renderMyOrdersList() {
+            const container = document.getElementById('my-orders-list');
+            const myOrders = savedOrderIds
+                .map(id => liveOrdersMap[id])
+                .filter(Boolean)
+                .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+            if (!myOrders.length) {
+                container.innerHTML = '<div class="text-center text-xs font-bold text-gray-500 py-8 bg-slate-50 rounded-2xl border">لا توجد طلبات مسجلة على هذا الجهاز حالياً.</div>';
+                return;
+            }
+
+            const statusColors = {
+                "قيد الانتظار": "bg-amber-100 text-amber-800",
+                "قيد التجهيز": "bg-blue-100 text-blue-800",
+                "تم التوصيل": "bg-green-100 text-green-800",
+                "ملغي": "bg-red-100 text-red-700"
+            };
+
+            container.innerHTML = myOrders.map(o => {
+                const statusClass = statusColors[o.status] || "bg-slate-100 text-slate-700";
+                const canModify = o.status !== "تم التوصيل" && o.status !== "ملغي";
+                return `
+                    <div class="border rounded-2xl p-4 bg-slate-50 space-y-2">
+                        <div class="flex justify-between items-center gap-2">
+                            <span class="font-black text-blue-900 text-sm">طلب #${o.id.slice(0, 6).toUpperCase()}${o.isEdited ? ' <span class="text-[11px] text-amber-700">(معدّل)</span>' : ''}</span>
+                            <span class="text-[11px] font-black px-2.5 py-0.5 rounded-full ${statusClass}">${o.status || 'قيد الانتظار'}</span>
+                        </div>
+                        <p class="text-xs font-bold text-slate-600">📍 ${o.address || '-'}</p>
+                        <div class="bg-white border rounded-xl p-2.5 text-xs font-bold text-slate-700 space-y-1">
+                            ${(o.items || []).map(i => `<div>• ${i.name} (×${i.qty}) = ${(i.qty * i.price).toLocaleString()} د.ع</div>`).join('')}
+                        </div>
+                        <div class="flex justify-between items-center pt-1">
+                            <span class="text-sm font-black text-blue-900">${Number(o.total || 0).toLocaleString()} د.ع</span>
+                            ${canModify ? `
+                                <div class="flex gap-2">
+                                    <button type="button" onclick="loadOrderIntoCartForEdit('${o.id}')" class="px-3 py-1.5 rounded-xl bg-yellow-400 text-blue-900 text-xs font-black">✏️ تعديل</button>
+                                    <button type="button" onclick="cancelCustomerOrder('${o.id}')" class="px-3 py-1.5 rounded-xl bg-red-100 text-red-700 text-xs font-black">إلغاء</button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
     </script>
 </body>
 </html>
