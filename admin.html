@@ -12,14 +12,20 @@
         .navy-bg { background-color: #1e3a8a; }
         .tab-btn.active { background-color: #facc15; color: #1e3a8a; font-weight: 900; }
         @media print {
-            body * { visibility: hidden !important; }
-            #print-receipt-area, #print-receipt-area * { visibility: visible !important; }
-            #print-receipt-area {
-                position: fixed !important;
-                inset: 0 !important;
+            body {
                 background: #fff !important;
-                padding: 20px !important;
-                z-index: 9999 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            #login-screen, #dashboard-screen {
+                display: none !important;
+            }
+            #print-receipt-area {
+                display: block !important;
+                position: static !important;
+                width: 100% !important;
+                background: #fff !important;
+                padding: 12px !important;
             }
         }
     </style>
@@ -780,7 +786,10 @@
                             ${o.orderMethod === 'pickup' ? '<span class="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800">استلام من السنتر</span>' : ''}
                             ${o.isEdited ? '<span class="text-[11px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">معدّل</span>' : ''}
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <button type="button" onclick="shareOrderReceiptWhatsApp('${o.id}')" class="px-3 py-1.5 rounded-xl bg-green-600 hover:bg-green-700 text-white text-xs font-black flex items-center gap-1 shadow-sm">
+                                <i class="fab fa-whatsapp"></i> إرسال الوصل
+                            </button>
                             <button type="button" onclick="printOrderReceipt('${o.id}')" class="px-3 py-1.5 rounded-xl bg-blue-900 text-yellow-400 text-xs font-black flex items-center gap-1">
                                 <i class="fas fa-print"></i> طباعة وصل
                             </button>
@@ -845,8 +854,75 @@
                 </div>
             `;
             printArea.classList.remove('hidden');
+            const cleanup = () => {
+                printArea.classList.add('hidden');
+                window.removeEventListener('afterprint', cleanup);
+            };
+            window.addEventListener('afterprint', cleanup);
             window.print();
-            printArea.classList.add('hidden');
+            setTimeout(() => {
+                printArea.classList.add('hidden');
+            }, 1200);
+        };
+
+        function extractIraqPhone(order) {
+            const rawCandidates = [
+                order.customerPhone || '',
+                order.phone || '',
+                order.address || ''
+            ].join(' ');
+            const normalized = rawCandidates.replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/[۰-۹]/g, d => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(d)));
+            const matches = normalized.match(/(?:\+?964|00964|0)?7[3-9]\d{8}/g);
+            if (!matches || !matches.length) return null;
+            let digits = matches[0].replace(/\D/g, '');
+            if (digits.startsWith('00964')) digits = digits.slice(2);
+            if (digits.startsWith('07') && digits.length === 11) digits = '964' + digits.slice(1);
+            if (digits.startsWith('7') && digits.length === 10) digits = '964' + digits;
+            return digits;
+        }
+
+        window.shareOrderReceiptWhatsApp = function(orderId) {
+            const o = ordersCache.find(item => item.id === orderId);
+            if (!o) return;
+            const phone = extractIraqPhone(o);
+            const dateStr = o.createdAt ? new Date(o.createdAt).toLocaleString('ar-IQ') : new Date().toLocaleString('ar-IQ');
+            const itemsLines = (o.items || []).map(i => `• ${i.name} (×${i.qty}) = ${(Number(i.qty || 0) * Number(i.price || 0)).toLocaleString()} د.ع`).join('\n');
+
+            const lines = [
+                `*الكابينة سنتر | للتسوق المنزلي*`,
+                `🧾 *وصل طلب رقم:* #${o.id.slice(0, 6).toUpperCase()}`,
+                `📅 *التاريخ:* ${dateStr}`,
+                o.customerName ? `👤 *الزبون:* ${o.customerName}` : '',
+                `🚚 *الاستلام:* ${o.orderMethod === 'pickup' ? 'استلام من السنتر' : 'توصيل للمنزل'}`,
+                o.customerAddress ? `📍 *العنوان:* ${o.customerAddress}` : (o.address ? `📍 *البيانات:* ${o.address}` : ''),
+                `------------------------`,
+                `*المواد المطلوبة:*`,
+                itemsLines,
+                `------------------------`,
+                o.deliveryFee ? `🛵 أجرة التوصيل: ${Number(o.deliveryFee).toLocaleString()} د.ع` : '',
+                o.discount ? `🎟️ الخصم (${o.promoCode || ''}): -${Number(o.discount).toLocaleString()} د.ع` : '',
+                `💰 *الإجمالي النهائي:* *${Number(o.total || 0).toLocaleString()} د.ع*`,
+                `📌 الحالة الحالية: ${o.status || 'قيد الانتظار'}`,
+                `شكراً لتسوقك معنا في الكابينة سنتر 🌸`
+            ].filter(Boolean).join('\n');
+
+            const encodedText = encodeURIComponent(lines);
+            if (phone) {
+                window.open(`https://wa.me/${phone}?text=${encodedText}`, '_blank');
+            } else {
+                const manualPhone = prompt("لم يتم العثور على رقم هاتف صالح في الطلب. أدخل رقم الزبون (مثال: 078...) أو اتركه فارغاً لفتح واتساب واختيار جهة الاتصال:");
+                if (manualPhone === null) return;
+                const cleaned = manualPhone.replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))).replace(/\D/g, '');
+                let formatted = '';
+                if (cleaned.startsWith('964')) formatted = cleaned;
+                else if (cleaned.startsWith('07') && cleaned.length === 11) formatted = '964' + cleaned.slice(1);
+                else if (cleaned.startsWith('7') && cleaned.length === 10) formatted = '964' + cleaned;
+
+                const targetUrl = formatted
+                    ? `https://wa.me/${formatted}?text=${encodedText}`
+                    : `https://wa.me/?text=${encodedText}`;
+                window.open(targetUrl, '_blank');
+            }
         };
 
         window.updateOrderStatus = async function(id, status) {
