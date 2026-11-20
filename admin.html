@@ -11,6 +11,17 @@
         body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; }
         .navy-bg { background-color: #1e3a8a; }
         .tab-btn.active { background-color: #facc15; color: #1e3a8a; font-weight: 900; }
+        @media print {
+            body * { visibility: hidden !important; }
+            #print-receipt-area, #print-receipt-area * { visibility: visible !important; }
+            #print-receipt-area {
+                position: fixed !important;
+                inset: 0 !important;
+                background: #fff !important;
+                padding: 20px !important;
+                z-index: 9999 !important;
+            }
+        }
     </style>
 </head>
 <body class="min-h-screen pb-16">
@@ -56,17 +67,45 @@
                         المستخدم: <span id="current-user-label" class="text-yellow-300"></span> | الصلاحية: <span id="current-role-label" class="underline"></span>
                     </p>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" id="sound-toggle-btn" onclick="toggleNotificationSound()" class="px-3.5 py-2 rounded-xl bg-yellow-400 text-blue-900 text-xs font-black shadow flex items-center gap-1.5">
+                        <i class="fas fa-bell"></i>
+                        <span id="sound-toggle-label">التنبيه الصوتي: مفعّل</span>
+                    </button>
+                    <button type="button" onclick="enableBrowserNotifications()" class="px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-xs font-bold">إشعارات المتصفح</button>
                     <a href="index.html" target="_blank" class="px-4 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-xs font-bold">عرض المتجر</a>
                     <button onclick="logoutAdmin()" class="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-xs font-black">خروج</button>
                 </div>
             </div>
         </header>
 
+        <!-- بطاقات الإحصائيات السريعة -->
+        <section class="max-w-6xl mx-auto px-4 mt-5 grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+                <p class="text-xs font-bold text-slate-500">طلبات قيد الانتظار</p>
+                <p id="stat-pending-orders" class="text-2xl font-black text-amber-600 mt-1">0</p>
+            </div>
+            <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+                <p class="text-xs font-bold text-slate-500">طلبات اليوم</p>
+                <p id="stat-today-orders" class="text-2xl font-black text-blue-900 mt-1">0</p>
+            </div>
+            <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+                <p class="text-xs font-bold text-slate-500">مبيعات اليوم (غير الملغاة)</p>
+                <p id="stat-today-sales" class="text-xl sm:text-2xl font-black text-green-700 mt-1">0 د.ع</p>
+            </div>
+            <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+                <p class="text-xs font-bold text-slate-500">مواد نفذت كميتها</p>
+                <p id="stat-out-stock" class="text-2xl font-black text-red-600 mt-1">0</p>
+            </div>
+        </section>
+
         <nav class="max-w-6xl mx-auto px-4 mt-5 flex gap-2 overflow-x-auto pb-2">
             <button onclick="showSection('products')" id="tab-products" class="tab-btn active px-5 py-2.5 rounded-2xl bg-white text-blue-900 text-sm font-bold shadow whitespace-nowrap">🛒 المنتجات</button>
-            <button onclick="showSection('orders')" id="tab-orders" class="tab-btn px-5 py-2.5 rounded-2xl bg-white text-blue-900 text-sm font-bold shadow whitespace-nowrap">📦 الطلبات</button>
-            <button onclick="showSection('settings')" id="tab-settings" class="tab-btn px-5 py-2.5 rounded-2xl bg-white text-blue-900 text-sm font-bold shadow whitespace-nowrap">🛠️ الإعدادات</button>
+            <button onclick="showSection('orders')" id="tab-orders" class="tab-btn px-5 py-2.5 rounded-2xl bg-white text-blue-900 text-sm font-bold shadow whitespace-nowrap flex items-center gap-2">
+                <span>📦 الطلبات</span>
+                <span id="pending-orders-badge" class="bg-red-600 text-white text-[11px] font-black px-2 py-0.5 rounded-full">0</span>
+            </button>
+            <button onclick="showSection('settings')" id="tab-settings" class="tab-btn px-5 py-2.5 rounded-2xl bg-white text-blue-900 text-sm font-bold shadow whitespace-nowrap">🛠️ الإعدادات والتوصيل والخصم</button>
             <button onclick="showSection('team')" id="tab-team" class="tab-btn px-5 py-2.5 rounded-2xl bg-white text-blue-900 text-sm font-bold shadow whitespace-nowrap">👥 الفريق والصلاحيات</button>
         </nav>
 
@@ -83,8 +122,12 @@
                             <input type="text" id="prod-name" required placeholder="مثال: طقم حافظات منزلية" class="w-full p-3 rounded-xl border font-bold text-sm">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">السعر (د.ع)</label>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">السعر الحالي (د.ع)</label>
                             <input type="number" id="prod-price" required min="0" placeholder="12000" class="w-full p-3 rounded-xl border font-bold text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">السعر قبل التخفيض (اختياري)</label>
+                            <input type="number" id="prod-old-price" min="0" placeholder="15000" class="w-full p-3 rounded-xl border font-bold text-sm">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">القسم</label>
@@ -92,15 +135,25 @@
                             <datalist id="categories-datalist"></datalist>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">حالة التوفر</label>
-                            <select id="prod-available" class="w-full p-3 rounded-xl border font-bold text-sm bg-white">
-                                <option value="true">متوفر</option>
-                                <option value="false">نفذت الكمية</option>
-                            </select>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">حالة التوفر والشارة</label>
+                            <div class="flex gap-2">
+                                <select id="prod-available" class="flex-1 p-3 rounded-xl border font-bold text-sm bg-white">
+                                    <option value="true">متوفر</option>
+                                    <option value="false">نفذت الكمية</option>
+                                </select>
+                                <label class="flex items-center gap-1.5 px-3 rounded-xl border bg-slate-50 text-xs font-black text-blue-900 cursor-pointer shrink-0">
+                                    <input type="checkbox" id="prod-is-new" class="w-4 h-4">
+                                    <span>وصل حديثاً</span>
+                                </label>
+                            </div>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">رفع صور من الجهاز (يمكن اختيار أكثر من صورة أو رفعها تباعاً)</label>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">رفع صور من الجهاز (متعدد)</label>
                             <input type="file" id="prod-image-file" accept="image/*" multiple onchange="uploadImagesToCloudinary(this)" class="w-full p-2 rounded-xl border text-xs font-bold bg-slate-50">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-bold text-slate-700 mb-1">وصف المادة / القياسات / الألوان (يظهر في بطاقة تفاصيل المنتج)</label>
+                            <input type="text" id="prod-desc" placeholder="مثال: خامة ممتازة، متوفر باللون الأبيض والرمادي، قياس كبير..." class="w-full p-3 rounded-xl border font-bold text-sm">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-700 mb-1">إضافة رابط صورة يدوياً</label>
@@ -136,36 +189,72 @@
             </section>
 
             <!-- قسم الطلبات -->
-            <section id="sec-orders" class="hidden bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
-                <h2 class="text-lg font-black text-blue-900 mb-4">📦 الطلبات الواردة من المتجر</h2>
+            <section id="sec-orders" class="hidden bg-white rounded-3xl p-6 shadow-sm border border-slate-200 space-y-4">
+                <div class="flex flex-wrap justify-between items-center gap-3">
+                    <h2 class="text-lg font-black text-blue-900">📦 الطلبات الواردة من المتجر</h2>
+                    <div class="flex flex-wrap gap-1.5">
+                        <button type="button" onclick="setOrderStatusFilter('الكل')" data-ofilter="الكل" class="order-filter-btn px-3.5 py-1.5 rounded-xl bg-blue-900 text-yellow-400 text-xs font-black">الكل</button>
+                        <button type="button" onclick="setOrderStatusFilter('قيد الانتظار')" data-ofilter="قيد الانتظار" class="order-filter-btn px-3.5 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-black">قيد الانتظار</button>
+                        <button type="button" onclick="setOrderStatusFilter('قيد التجهيز')" data-ofilter="قيد التجهيز" class="order-filter-btn px-3.5 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-black">قيد التجهيز</button>
+                        <button type="button" onclick="setOrderStatusFilter('تم التوصيل')" data-ofilter="تم التوصيل" class="order-filter-btn px-3.5 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-black">تم التوصيل</button>
+                        <button type="button" onclick="setOrderStatusFilter('ملغي')" data-ofilter="ملغي" class="order-filter-btn px-3.5 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-black">ملغي</button>
+                    </div>
+                </div>
                 <div id="admin-orders-list" class="space-y-3"></div>
             </section>
 
             <!-- قسم الإعدادات -->
-            <section id="sec-settings" class="hidden bg-white rounded-3xl p-6 shadow-sm border border-slate-200 max-w-2xl">
-                <h2 class="text-lg font-black text-blue-900 mb-4">🛠️ إعدادات المتجر والمساعد والشريط المتحرك</h2>
+            <section id="sec-settings" class="hidden bg-white rounded-3xl p-6 shadow-sm border border-slate-200 max-w-3xl">
+                <h2 class="text-lg font-black text-blue-900 mb-4">🛠️ إعدادات المتجر والتوصيل وكوبونات الخصم</h2>
                 <div class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">اسم المتجر</label>
-                        <input type="text" id="set-store-name" class="w-full p-3 rounded-xl border font-bold text-sm">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">اسم المتجر</label>
+                            <input type="text" id="set-store-name" class="w-full p-3 rounded-xl border font-bold text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">رقم الواتساب لاستقبال الطلبات (بدون +)</label>
+                            <input type="text" id="set-whatsapp" placeholder="9647821465582" class="w-full p-3 rounded-xl border font-bold text-sm">
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">رقم الواتساب لاستقبال الطلبات (بدون +)</label>
-                        <input type="text" id="set-whatsapp" placeholder="9647821465582" class="w-full p-3 rounded-xl border font-bold text-sm">
-                    </div>
+
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">رسالة الترحيب في المساعد الذكي</label>
                         <input type="text" id="set-bot-welcome" class="w-full p-3 rounded-xl border font-bold text-sm">
                     </div>
+
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">عبارات الشريط المتحرك العلوي (افصل بين العبارات بـ | أو سطر جديد)</label>
-                        <textarea id="set-ticker-messages" rows="3" placeholder="مثال: 🏠 الكابينة سنتر — الناصرية: الإسكان الصناعي، النزلة الأولى، مقابل جامع الإسكان الكبير | ⭐ مواد منزلية ومنفذ متكامل" class="w-full p-3 rounded-xl border font-bold text-sm"></textarea>
+                        <textarea id="set-ticker-messages" rows="2" class="w-full p-3 rounded-xl border font-bold text-sm"></textarea>
                     </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">الحد الأدنى للتوصيل المجاني (د.ع) — ضع 0 لإيقافه</label>
+                            <input type="number" id="set-free-delivery-min" min="0" placeholder="25000" class="w-full p-3 rounded-xl border font-bold text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">ترتيب ظهور الأقسام في المتجر (افصل بفاصلة)</label>
+                            <input type="text" id="set-category-order" placeholder="مواد منزلية, كهربائيات, مفروشات" class="w-full p-3 rounded-xl border font-bold text-sm">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">مناطق وأجور التوصيل في الناصرية (سطر لكل منطقة بصيغة: اسم المنطقة : السعر)</label>
+                        <textarea id="set-delivery-zones" rows="3" placeholder="الإسكان الصناعي والمناطق القريبة : 2000&#10;مركز مدينة الناصرية : 3000&#10;أحياء الناصرية الأخرى : 4000" class="w-full p-3 rounded-xl border font-bold text-xs"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">كوبونات الخصم (سطر لكل كود بصيغة: الكود : النوع(percent أو fixed) : القيمة)</label>
+                        <textarea id="set-promo-codes" rows="3" placeholder="ALK10 : percent : 10&#10;WELCOME2000 : fixed : 2000" class="w-full p-3 rounded-xl border font-bold text-xs"></textarea>
+                    </div>
+
                     <div class="flex items-center gap-3">
                         <input type="checkbox" id="set-store-open" class="w-5 h-5">
                         <label for="set-store-open" class="text-sm font-bold text-blue-900">المتجر مفتوح ويستقبل الطلبات حالياً</label>
                     </div>
-                    <button onclick="saveStoreSettings()" class="px-7 py-3 rounded-2xl bg-blue-900 text-yellow-400 font-black text-sm">حفظ الإعدادات</button>
+
+                    <button onclick="saveStoreSettings()" class="px-7 py-3 rounded-2xl bg-blue-900 text-yellow-400 font-black text-sm">حفظ جميع الإعدادات</button>
                 </div>
             </section>
 
@@ -198,6 +287,9 @@
         </main>
     </div>
 
+    <!-- قالب طباعة الوصل -->
+    <div id="print-receipt-area" class="hidden text-right" dir="rtl"></div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
@@ -217,6 +309,11 @@
             "⭐ مواد منزلية ومنفذ متكامل — تسوق بذكاء وسهولة",
             "✏️ إمكانية تعديل طلبك بسهولة بعد التأكيد"
         ];
+        const DEFAULT_DELIVERY_ZONES = [
+            { name: "الإسكان الصناعي والمناطق القريبة", fee: 2000 },
+            { name: "مركز مدينة الناصرية", fee: 3000 },
+            { name: "أحياء الناصرية الأخرى", fee: 4000 }
+        ];
 
         const firebaseConfig = {
             apiKey: "AIzaSyAqhKx_pxcaY_ZBOas8TrvYWwxY_2nqTjY",
@@ -234,8 +331,57 @@
 
         let currentUserSession = null;
         let productsCache = [];
+        let ordersCache = [];
         let teamCache = [];
         let currentProductImages = [];
+        let orderStatusFilter = 'الكل';
+        let soundEnabled = true;
+        let initialOrdersLoaded = false;
+        let knownOrderIds = new Set();
+
+        function playNewOrderChime() {
+            if (!soundEnabled) return;
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                const ctx = new AudioCtx();
+                const notes = [587.33, 880, 1174.66];
+                notes.forEach((freq, idx) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = "sine";
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.18, ctx.currentTime + idx * 0.14);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.14 + 0.35);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(ctx.currentTime + idx * 0.14);
+                    osc.stop(ctx.currentTime + idx * 0.14 + 0.36);
+                });
+            } catch (e) {}
+        }
+
+        window.toggleNotificationSound = function() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('sound-toggle-label').textContent = soundEnabled ? "التنبيه الصوتي: مفعّل" : "التنبيه الصوتي: صامت";
+            if (soundEnabled) playNewOrderChime();
+        };
+
+        window.enableBrowserNotifications = async function() {
+            if (!("Notification" in window)) return alert("المتصفح لا يدعم إشعارات سطح المكتب.");
+            const perm = await Notification.requestPermission();
+            if (perm === "granted") {
+                new Notification("الكابينة سنتر", { body: "تم تفعيل إشعارات الطلبات الجديدة بنجاح ✅" });
+            }
+        };
+
+        function triggerNewOrderAlert(order) {
+            playNewOrderChime();
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification(`طلب جديد #${order.id.slice(0, 6).toUpperCase()}`, {
+                    body: `المبلغ: ${Number(order.total || 0).toLocaleString()} د.ع — ${order.address || ''}`
+                });
+            }
+        }
 
         window.switchLoginMode = function(mode) {
             const isEmail = mode === 'email';
@@ -299,20 +445,15 @@
                     return showLoginError("المعرّف أو رمز الدخول غير صحيح أو الحساب معطّل.");
                 }
                 const data = snap.docs[0].data();
-                sessionStorage.setItem("alkabeena_staff_session", JSON.stringify({
+                const sess = {
                     name: data.name,
                     email: data.email || "-",
                     code: data.code,
                     role: data.role || "orders",
                     type: "pin"
-                }));
-                startDashboard({
-                    name: data.name,
-                    email: data.email || "-",
-                    code: data.code,
-                    role: data.role || "orders",
-                    type: "pin"
-                });
+                };
+                sessionStorage.setItem("alkabeena_staff_session", JSON.stringify(sess));
+                startDashboard(sess);
             } catch (e) {
                 showLoginError("حدث خطأ أثناء التحقق من المعرّف.");
             }
@@ -373,6 +514,25 @@
                 document.getElementById('tab-' + s).classList.toggle('active', s === sec);
             });
         };
+
+        function updateDashboardStats() {
+            const pendingCount = ordersCache.filter(o => (o.status || 'قيد الانتظار') === 'قيد الانتظار').length;
+            document.getElementById('stat-pending-orders').textContent = pendingCount;
+            document.getElementById('pending-orders-badge').textContent = pendingCount;
+
+            const todayStart = new Date();
+            todayStart.setHours(0, 0, 0, 0);
+            const todayOrders = ordersCache.filter(o => (o.createdAt || 0) >= todayStart.getTime());
+            const todaySales = todayOrders
+                .filter(o => o.status !== 'ملغي')
+                .reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+
+            document.getElementById('stat-today-orders').textContent = todayOrders.length;
+            document.getElementById('stat-today-sales').textContent = `${todaySales.toLocaleString()} د.ع`;
+
+            const outOfStockCount = productsCache.filter(p => p.available === false).length;
+            document.getElementById('stat-out-stock').textContent = outOfStockCount;
+        }
 
         function renderProductImagesGallery() {
             document.getElementById('prod-images-count').textContent = currentProductImages.length;
@@ -472,13 +632,17 @@
             const id = document.getElementById('edit-product-id').value;
             const name = document.getElementById('prod-name').value.trim();
             const price = parseInt(document.getElementById('prod-price').value) || 0;
+            const oldPriceRaw = parseInt(document.getElementById('prod-old-price').value) || 0;
+            const oldPrice = oldPriceRaw > price ? oldPriceRaw : 0;
             const category = document.getElementById('prod-cat').value.trim() || "عام";
+            const description = document.getElementById('prod-desc').value.trim();
             const available = document.getElementById('prod-available').value === "true";
+            const isNew = document.getElementById('prod-is-new').checked;
             const fallbackImg = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=facc15&color=1e3a8a`;
             const finalImages = currentProductImages.length ? [...currentProductImages] : [fallbackImg];
             const img = finalImages[0];
 
-            const payload = { name, price, category, available, img, images: finalImages, updatedAt: Date.now() };
+            const payload = { name, price, oldPrice, category, description, available, isNew, img, images: finalImages, updatedAt: Date.now() };
             if (id) {
                 await updateDoc(doc(db, "products", id), payload);
             } else {
@@ -494,8 +658,11 @@
             document.getElementById('edit-product-id').value = p.id;
             document.getElementById('prod-name').value = p.name;
             document.getElementById('prod-price').value = p.price;
+            document.getElementById('prod-old-price').value = p.oldPrice || '';
             document.getElementById('prod-cat').value = p.category;
+            document.getElementById('prod-desc').value = p.description || '';
             document.getElementById('prod-available').value = String(p.available !== false);
+            document.getElementById('prod-is-new').checked = p.isNew === true;
             document.getElementById('prod-image-url').value = '';
             currentProductImages = Array.isArray(p.images) && p.images.length
                 ? [...p.images]
@@ -530,6 +697,7 @@
                 const cats = [...new Set(productsCache.map(p => p.category).filter(Boolean))];
                 document.getElementById('categories-datalist').innerHTML = cats.map(c => `<option value="${c}">`).join('');
                 renderAdminProducts();
+                updateDashboardStats();
             });
         }
 
@@ -553,6 +721,7 @@
                                     ${p.available === false ? 'نفذت الكمية' : 'متوفر'}
                                 </span>
                                 <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-900">${imgsCount} صورة</span>
+                                ${p.isNew ? '<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-300 text-blue-900">جديد</span>' : ''}
                             </div>
                         </div>
                     </div>
@@ -566,14 +735,55 @@
             }).join('');
         };
 
+        window.setOrderStatusFilter = function(status) {
+            orderStatusFilter = status;
+            document.querySelectorAll('.order-filter-btn').forEach(btn => {
+                const active = btn.dataset.ofilter === status;
+                btn.className = active
+                    ? 'order-filter-btn px-3.5 py-1.5 rounded-xl bg-blue-900 text-yellow-400 text-xs font-black'
+                    : 'order-filter-btn px-3.5 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-black';
+            });
+            renderAdminOrders();
+        };
+
         function listenOrders() {
             const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
             onSnapshot(q, (snap) => {
-                const orders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                document.getElementById('admin-orders-list').innerHTML = orders.length ? orders.map(o => `
-                    <div class="border rounded-2xl p-4 bg-slate-50 space-y-2">
-                        <div class="flex flex-wrap justify-between items-center gap-2">
+                const incoming = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                if (!initialOrdersLoaded) {
+                    incoming.forEach(o => knownOrderIds.add(o.id));
+                    initialOrdersLoaded = true;
+                } else {
+                    incoming.forEach(o => {
+                        if (!knownOrderIds.has(o.id)) {
+                            knownOrderIds.add(o.id);
+                            triggerNewOrderAlert(o);
+                        }
+                    });
+                }
+                ordersCache = incoming;
+                updateDashboardStats();
+                renderAdminOrders();
+            });
+        }
+
+        function renderAdminOrders() {
+            const filtered = orderStatusFilter === 'الكل'
+                ? ordersCache
+                : ordersCache.filter(o => (o.status || 'قيد الانتظار') === orderStatusFilter);
+
+            document.getElementById('admin-orders-list').innerHTML = filtered.length ? filtered.map(o => `
+                <div class="border rounded-2xl p-4 bg-slate-50 space-y-2">
+                    <div class="flex flex-wrap justify-between items-center gap-2">
+                        <div class="flex items-center gap-2 flex-wrap">
                             <span class="font-black text-blue-900">طلب #${o.id.slice(0, 6).toUpperCase()} — ${Number(o.total || 0).toLocaleString()} د.ع</span>
+                            ${o.orderMethod === 'pickup' ? '<span class="text-[11px] font-black px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800">استلام من السنتر</span>' : ''}
+                            ${o.isEdited ? '<span class="text-[11px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">معدّل</span>' : ''}
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="printOrderReceipt('${o.id}')" class="px-3 py-1.5 rounded-xl bg-blue-900 text-yellow-400 text-xs font-black flex items-center gap-1">
+                                <i class="fas fa-print"></i> طباعة وصل
+                            </button>
                             <select onchange="updateOrderStatus('${o.id}', this.value)" class="p-1.5 rounded-xl border text-xs font-bold bg-white">
                                 <option value="قيد الانتظار" ${o.status === 'قيد الانتظار' ? 'selected' : ''}>قيد الانتظار</option>
                                 <option value="قيد التجهيز" ${o.status === 'قيد التجهيز' ? 'selected' : ''}>قيد التجهيز</option>
@@ -581,14 +791,63 @@
                                 <option value="ملغي" ${o.status === 'ملغي' ? 'selected' : ''}>ملغي</option>
                             </select>
                         </div>
-                        <p class="text-xs font-bold text-slate-700">📍 العنوان / الهاتف: ${o.address || '-'}</p>
-                        <div class="text-xs font-bold text-slate-600 bg-white p-3 rounded-xl border">
-                            ${(o.items || []).map(i => `<div>• ${i.name} (×${i.qty}) = ${(i.qty * i.price).toLocaleString()} د.ع</div>`).join('')}
-                        </div>
                     </div>
-                `).join('') : '<p class="text-sm font-bold text-slate-500">لا توجد طلبات مسجلة حتى الآن.</p>';
-            });
+                    <p class="text-xs font-bold text-slate-700">📍 البيانات: ${o.address || '-'}</p>
+                    <div class="text-xs font-bold text-slate-600 bg-white p-3 rounded-xl border space-y-1">
+                        ${(o.items || []).map(i => `<div>• ${i.name} (×${i.qty}) = ${(i.qty * i.price).toLocaleString()} د.ع</div>`).join('')}
+                        ${o.deliveryFee ? `<div class="text-blue-900 pt-1 border-t">🛵 أجرة التوصيل: ${Number(o.deliveryFee).toLocaleString()} د.ع</div>` : ''}
+                        ${o.discount ? `<div class="text-green-700">🎟️ خصم (${o.promoCode || ''}): -${Number(o.discount).toLocaleString()} د.ع</div>` : ''}
+                    </div>
+                </div>
+            `).join('') : '<p class="text-sm font-bold text-slate-500">لا توجد طلبات مطابقة لهذا التصنيف حالياً.</p>';
         }
+
+        window.printOrderReceipt = function(orderId) {
+            const o = ordersCache.find(item => item.id === orderId);
+            if (!o) return;
+            const dateStr = o.createdAt ? new Date(o.createdAt).toLocaleString('ar-IQ') : new Date().toLocaleString('ar-IQ');
+            const printArea = document.getElementById('print-receipt-area');
+            printArea.innerHTML = `
+                <div style="max-width: 340px; margin: 0 auto; font-family: 'Tajawal', sans-serif; border: 2px solid #1e3a8a; border-radius: 16px; padding: 16px;">
+                    <div style="text-align: center; border-bottom: 2px dashed #cbd5e1; padding-bottom: 10px; margin-bottom: 10px;">
+                        <h2 style="font-size: 18px; font-weight: 900; color: #1e3a8a; margin: 0;">الكابينة سنتر | للتسوق المنزلي</h2>
+                        <p style="font-size: 11px; color: #475569; margin: 4px 0 0;">الناصرية - الإسكان الصناعي، النزلة الأولى</p>
+                        <p style="font-size: 11px; color: #475569; margin: 2px 0 0;">هاتف: 07821465582</p>
+                    </div>
+                    <div style="font-size: 12px; font-weight: 700; margin-bottom: 10px; line-height: 1.7;">
+                        <div>رقم الوصل: #${o.id.slice(0, 6).toUpperCase()}</div>
+                        <div>التاريخ: ${dateStr}</div>
+                        <div>الزبون: ${o.address || '-'}</div>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 10px;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid #94a3b8; text-align: right;">
+                                <th style="padding: 4px 0;">المادة</th>
+                                <th style="padding: 4px 0; text-align: center;">العدد</th>
+                                <th style="padding: 4px 0; text-align: left;">المبلغ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${(o.items || []).map(i => `
+                                <tr style="border-bottom: 1px dashed #e2e8f0;">
+                                    <td style="padding: 5px 0; font-weight: 700;">${i.name}</td>
+                                    <td style="padding: 5px 0; text-align: center;">${i.qty}</td>
+                                    <td style="padding: 5px 0; text-align: left;">${(i.qty * i.price).toLocaleString()}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    <div style="font-size: 13px; font-weight: 900; border-top: 2px dashed #cbd5e1; padding-top: 8px; line-height: 1.8;">
+                        ${o.deliveryFee ? `<div style="display:flex; justify-content:space-between; font-size:12px;"><span>التوصيل:</span><span>${Number(o.deliveryFee).toLocaleString()} د.ع</span></div>` : ''}
+                        ${o.discount ? `<div style="display:flex; justify-content:space-between; font-size:12px;"><span>الخصم:</span><span>-${Number(o.discount).toLocaleString()} د.ع</span></div>` : ''}
+                        <div style="display:flex; justify-content:space-between; font-size:15px; color:#1e3a8a;"><span>الإجمالي:</span><span>${Number(o.total || 0).toLocaleString()} د.ع</span></div>
+                    </div>
+                </div>
+            `;
+            printArea.classList.remove('hidden');
+            window.print();
+            printArea.classList.add('hidden');
+        };
 
         window.updateOrderStatus = async function(id, status) {
             await updateDoc(doc(db, "orders", id), { status });
@@ -604,25 +863,57 @@
                     ? d.tickerMessages
                     : DEFAULT_TICKER_MESSAGES;
                 document.getElementById('set-ticker-messages').value = tickerArr.join(" | ");
+                document.getElementById('set-free-delivery-min').value = d.freeDeliveryMin || 0;
+                document.getElementById('set-category-order').value = Array.isArray(d.categoryOrder) ? d.categoryOrder.join(", ") : "";
+
+                const zones = Array.isArray(d.deliveryZones) && d.deliveryZones.length ? d.deliveryZones : DEFAULT_DELIVERY_ZONES;
+                document.getElementById('set-delivery-zones').value = zones.map(z => `${z.name} : ${z.fee}`).join("\n");
+
+                const promos = Array.isArray(d.promoCodes) ? d.promoCodes : [];
+                document.getElementById('set-promo-codes').value = promos.map(c => `${c.code} : ${c.type || 'percent'} : ${c.value}`).join("\n");
+
                 document.getElementById('set-store-open').checked = d.isOpen !== false;
             });
         }
 
         window.saveStoreSettings = async function() {
             const rawTicker = document.getElementById('set-ticker-messages').value || "";
-            const parsedTicker = rawTicker
-                .split(/\||\n/)
-                .map(s => s.trim())
-                .filter(Boolean);
+            const parsedTicker = rawTicker.split(/\||\n/).map(s => s.trim()).filter(Boolean);
+
+            const rawCatOrder = document.getElementById('set-category-order').value || "";
+            const parsedCatOrder = rawCatOrder.split(/,|،/).map(s => s.trim()).filter(Boolean);
+
+            const rawZones = document.getElementById('set-delivery-zones').value || "";
+            const parsedZones = rawZones.split(/\n/).map(line => {
+                const parts = line.split(":");
+                if (parts.length < 2) return null;
+                const name = parts[0].trim();
+                const fee = parseInt(parts[1].trim()) || 0;
+                return name ? { name, fee } : null;
+            }).filter(Boolean);
+
+            const rawPromos = document.getElementById('set-promo-codes').value || "";
+            const parsedPromos = rawPromos.split(/\n/).map(line => {
+                const parts = line.split(":");
+                if (parts.length < 3) return null;
+                const code = parts[0].trim().toUpperCase();
+                const type = parts[1].trim().toLowerCase() === 'fixed' ? 'fixed' : 'percent';
+                const value = parseInt(parts[2].trim()) || 0;
+                return code && value > 0 ? { code, type, value, active: true } : null;
+            }).filter(Boolean);
 
             await setDoc(doc(db, "settings", "store"), {
                 storeName: document.getElementById('set-store-name').value.trim() || DEFAULT_STORE_NAME,
                 whatsapp: document.getElementById('set-whatsapp').value.trim() || DEFAULT_WHATSAPP,
                 botWelcome: document.getElementById('set-bot-welcome').value.trim() || DEFAULT_BOT_WELCOME,
                 tickerMessages: parsedTicker.length ? parsedTicker : DEFAULT_TICKER_MESSAGES,
+                freeDeliveryMin: parseInt(document.getElementById('set-free-delivery-min').value) || 0,
+                categoryOrder: parsedCatOrder,
+                deliveryZones: parsedZones.length ? parsedZones : DEFAULT_DELIVERY_ZONES,
+                promoCodes: parsedPromos,
                 isOpen: document.getElementById('set-store-open').checked
             }, { merge: true });
-            alert("تم حفظ إعدادات المتجر بنجاح.");
+            alert("تم حفظ جميع الإعدادات بنجاح.");
         };
 
         function listenTeam() {
