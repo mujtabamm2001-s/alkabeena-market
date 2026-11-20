@@ -40,9 +40,9 @@
         <p class="mt-6 font-black text-blue-900 text-xl tracking-wide">يا هلا بيك في ماركت الكابينة...</p>
     </div>
 
-    <!-- شريط إعلاني علوي متحرك بأسلوب المتاجر الحديثة -->
+    <!-- شريط إعلاني علوي متحرك قابل للتعديل من لوحة الأدمن -->
     <div class="bg-yellow-400 text-blue-900 py-2 overflow-hidden border-b border-blue-900/10 text-xs font-black">
-        <div class="animate-marquee gap-10">
+        <div id="ticker-track" class="animate-marquee gap-10">
             <span>🚚 توصيل سريع داخل كربلاء — ماركت الكابينة</span>
             <span>⭐ تسوق بذكاء وسهولة — مواد غذائية ومنزلية متكاملة</span>
             <span>✏️ إمكانية تعديل طلبك بسهولة بعد التأكيد</span>
@@ -201,8 +201,17 @@
         </div>
     </div>
 
-    <div id="image-viewer" class="fixed inset-0 bg-black/90 z-[100] hidden flex items-center justify-center p-4" onclick="closeImageViewer()">
-        <img id="full-image" src="" class="rounded-3xl shadow-2xl max-w-full max-h-[80vh] object-contain border-4 border-white/10">
+    <!-- عارض صور المنتج المتعددة -->
+    <div id="image-viewer" class="fixed inset-0 bg-black/95 z-[100] hidden flex flex-col items-center justify-center p-4" onclick="closeImageViewer()">
+        <div class="relative max-w-full max-h-[82vh] flex items-center justify-center" onclick="event.stopPropagation()">
+            <img id="full-image" src="" class="rounded-3xl shadow-2xl max-w-full max-h-[75vh] object-contain border-4 border-white/10">
+            <button type="button" onclick="closeImageViewer()" class="absolute -top-3 -left-3 w-9 h-9 rounded-full bg-white text-slate-900 font-black text-lg shadow-lg flex items-center justify-center">×</button>
+        </div>
+        <div id="viewer-controls" class="hidden flex items-center gap-4 mt-4" onclick="event.stopPropagation()">
+            <button type="button" onclick="stepViewerImage(-1)" class="px-4 py-2 rounded-2xl bg-yellow-400 text-blue-900 font-black text-xs shadow">السابقة</button>
+            <span id="viewer-counter" class="text-white text-xs font-black">1 / 1</span>
+            <button type="button" onclick="stepViewerImage(1)" class="px-4 py-2 rounded-2xl bg-yellow-400 text-blue-900 font-black text-xs shadow">التالية</button>
+        </div>
     </div>
 
     <script type="module">
@@ -223,8 +232,16 @@
         const db = getFirestore(app);
 
         const LOCAL_ORDERS_KEY = "alkabeena_customer_order_ids";
+        const DEFAULT_TICKER_MESSAGES = [
+            "🚚 توصيل سريع داخل كربلاء — ماركت الكابينة",
+            "⭐ تسوق بذكاء وسهولة — مواد غذائية ومنزلية متكاملة",
+            "✏️ إمكانية تعديل طلبك بسهولة بعد التأكيد"
+        ];
+
         let allProducts = [], cart = {}, currentCategory = 'الكل', expandedCategory = null;
-        let storeConfig = { storeName: "ماركت الكابينة", whatsapp: "9647760982880", isOpen: true };
+        let cardImageIndices = {};
+        let viewerImages = [], viewerIndex = 0;
+        let storeConfig = { storeName: "ماركت الكابينة", whatsapp: "9647760982880", isOpen: true, tickerMessages: DEFAULT_TICKER_MESSAGES };
         let savedOrderIds = JSON.parse(localStorage.getItem(LOCAL_ORDERS_KEY) || "[]");
         let liveOrdersMap = {};
         let editingOrderId = null;
@@ -239,6 +256,15 @@
             document.getElementById('my-orders-badge').textContent = savedOrderIds.length;
         }
         updateMyOrdersBadge();
+
+        function renderTickerMessages(messages) {
+            const list = Array.isArray(messages) && messages.length ? messages : DEFAULT_TICKER_MESSAGES;
+            const repeated = [...list, ...list];
+            document.getElementById('ticker-track').innerHTML = repeated
+                .map(msg => `<span>${msg}</span>`)
+                .join('');
+        }
+        renderTickerMessages(DEFAULT_TICKER_MESSAGES);
 
         window.toggleChat = function() {
             document.getElementById('chat-window').classList.toggle('hidden');
@@ -268,6 +294,7 @@
             if (d.botWelcome) {
                 document.getElementById('bot-welcome-msg').textContent = d.botWelcome;
             }
+            renderTickerMessages(d.tickerMessages);
             document.getElementById('closed-banner').classList.toggle('hidden', d.isOpen !== false);
         });
 
@@ -279,12 +306,17 @@
                 if (cat && cat !== 'عام') cats.add(cat);
                 const price = parseInt(p.price) || 0;
                 const oldPrice = parseInt(p.oldPrice || p.compareAtPrice) || 0;
+                const fallbackImg = `https://ui-avatars.com/api/?name=${encodeURIComponent(p.name || 'K')}&background=facc15&color=1e3a8a`;
+                const images = Array.isArray(p.images) && p.images.length
+                    ? p.images.filter(Boolean)
+                    : [p.img || fallbackImg];
                 return {
                     id: d.id,
                     name: p.name || '',
                     price,
                     oldPrice: oldPrice > price ? oldPrice : 0,
-                    img: p.img || `https://ui-avatars.com/api/?name=${encodeURIComponent(p.name || 'K')}&background=facc15&color=1e3a8a`,
+                    img: images[0] || fallbackImg,
+                    images,
                     cat,
                     available: p.available !== false
                 };
@@ -309,16 +341,35 @@
             }
         });
 
+        window.stepCardImage = function(prodId, delta, totalImages) {
+            if (totalImages <= 1) return;
+            const current = cardImageIndices[prodId] || 0;
+            cardImageIndices[prodId] = (current + delta + totalImages) % totalImages;
+            render();
+        };
+
         function renderProductCard(p) {
             const qty = cart[p.name] ? cart[p.name].qty : 0;
             const isSoldOut = !p.available;
+            const imgs = p.images && p.images.length ? p.images : [p.img];
+            const activeIdx = (cardImageIndices[p.id] || 0) % imgs.length;
+            const activeImg = imgs[activeIdx];
+            const encodedImgs = encodeURIComponent(JSON.stringify(imgs));
+
             return `
                 <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden flex flex-col justify-between transition hover:shadow-md ${isSoldOut ? 'opacity-70' : ''}">
                     <div>
-                        <div class="relative h-44 bg-slate-100 overflow-hidden cursor-pointer" onclick="openImageViewer('${p.img}')">
-                            <img src="${p.img}" alt="${p.name}" class="w-full h-full object-cover">
+                        <div class="relative h-44 bg-slate-100 overflow-hidden cursor-pointer" onclick="openImageViewerByEncoded('${encodedImgs}', ${activeIdx})">
+                            <img src="${activeImg}" alt="${p.name}" class="w-full h-full object-cover">
                             ${isSoldOut ? '<span class="absolute top-2.5 right-2.5 bg-red-600 text-white text-[11px] font-black px-3 py-1 rounded-full shadow">نفذت الكمية</span>' : ''}
                             ${!isSoldOut && p.oldPrice > 0 ? '<span class="absolute top-2.5 left-2.5 bg-yellow-400 text-blue-900 text-[11px] font-black px-2.5 py-1 rounded-full shadow">عرض</span>' : ''}
+                            ${imgs.length > 1 ? `
+                                <span class="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] font-black px-2 py-0.5 rounded-full">${activeIdx + 1}/${imgs.length}</span>
+                                <div class="absolute bottom-2 left-2 flex gap-1" onclick="event.stopPropagation()">
+                                    <button type="button" onclick="stepCardImage('${p.id}', -1, ${imgs.length})" class="w-6 h-6 rounded-full bg-white/90 text-blue-900 font-black text-xs shadow flex items-center justify-center">‹</button>
+                                    <button type="button" onclick="stepCardImage('${p.id}', 1, ${imgs.length})" class="w-6 h-6 rounded-full bg-white/90 text-blue-900 font-black text-xs shadow flex items-center justify-center">›</button>
+                                </div>
+                            ` : ''}
                         </div>
                         <div class="p-3.5 text-right">
                             <p class="text-[11px] font-bold text-slate-400 mb-0.5">${p.cat}</p>
@@ -408,10 +459,44 @@
             render();
         };
 
-        window.openImageViewer = function(src) {
-            document.getElementById('full-image').src = src;
+        function syncViewerState() {
+            const currentUrl = viewerImages[viewerIndex] || '';
+            document.getElementById('full-image').src = currentUrl;
+            const controls = document.getElementById('viewer-controls');
+            if (viewerImages.length > 1) {
+                controls.classList.remove('hidden');
+                document.getElementById('viewer-counter').textContent = `${viewerIndex + 1} / ${viewerImages.length}`;
+            } else {
+                controls.classList.add('hidden');
+            }
+        }
+
+        window.openImageViewerByEncoded = function(encodedImgs, startIdx = 0) {
+            try {
+                viewerImages = JSON.parse(decodeURIComponent(encodedImgs)) || [];
+            } catch (e) {
+                viewerImages = [];
+            }
+            viewerIndex = Math.max(0, Math.min(startIdx, viewerImages.length - 1));
+            if (!viewerImages.length) return;
+            syncViewerState();
             document.getElementById('image-viewer').classList.remove('hidden');
         };
+
+        window.openImageViewer = function(src) {
+            viewerImages = src ? [src] : [];
+            viewerIndex = 0;
+            if (!viewerImages.length) return;
+            syncViewerState();
+            document.getElementById('image-viewer').classList.remove('hidden');
+        };
+
+        window.stepViewerImage = function(delta) {
+            if (viewerImages.length <= 1) return;
+            viewerIndex = (viewerIndex + delta + viewerImages.length) % viewerImages.length;
+            syncViewerState();
+        };
+
         window.closeImageViewer = function() {
             document.getElementById('image-viewer').classList.add('hidden');
         };
