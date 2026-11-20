@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم ماركت الكابينة</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Tajawal', sans-serif; background-color: #f1f5f9; }
+        .navy-bg { background-color: #1e3a8a; }
+        .tab-btn.active { background-color: #facc15; color: #1e3a8a; font-weight: 900; }
+    </style>
+</head>
+<body class="min-h-screen pb-16">
+
+    <!-- شاشة تسجيل الدخول -->
+    <div id="login-screen" class="min-h-screen flex items-center justify-center p-4 navy-bg">
+        <div class="bg-white w-full max-w-md rounded-3xl p-7 shadow-2xl border-b-8 border-yellow-400">
+            <div class="text-center mb-6">
+                <h1 class="text-2xl font-black text-blue-900">🔐 لوحة إدارة ماركت الكابينة</h1>
+                <p class="text-xs text-gray-500 font-bold mt-1">دخول الإدارة الأساسية أو فريق العمل</p>
+            </div>
+
+            <div class="flex gap-2 bg-slate-100 p-1 rounded-2xl mb-5">
+                <button onclick="switchLoginMode('email')" id="mode-email-btn" class="flex-1 py-2 rounded-xl text-xs font-black bg-blue-900 text-white">بريد وكلمة مرور</button>
+                <button onclick="switchLoginMode('pin')" id="mode-pin-btn" class="flex-1 py-2 rounded-xl text-xs font-black text-blue-900">معرّف ورمز دخول</button>
+            </div>
+
+            <!-- دخول البريد الإلكتروني -->
+            <div id="email-login-box" class="space-y-3">
+                <input type="email" id="login-email" placeholder="البريد الإلكتروني" class="w-full p-3.5 rounded-2xl border-2 border-slate-200 font-bold text-sm outline-none focus:border-blue-900">
+                <input type="password" id="login-password" placeholder="كلمة المرور" class="w-full p-3.5 rounded-2xl border-2 border-slate-200 font-bold text-sm outline-none focus:border-blue-900">
+                <button onclick="loginWithEmail()" class="w-full py-3.5 rounded-2xl bg-blue-900 text-yellow-400 font-black shadow-lg hover:bg-blue-800 transition">دخول الحساب</button>
+            </div>
+
+            <!-- دخول المعرّف والرمز السريع للفريق -->
+            <div id="pin-login-box" class="space-y-3 hidden">
+                <input type="text" id="login-staff-id" placeholder="معرّف الدخول (مثال: STAFF01)" class="w-full p-3.5 rounded-2xl border-2 border-slate-200 font-bold text-sm outline-none focus:border-blue-900 uppercase">
+                <input type="password" id="login-staff-pin" placeholder="رمز الدخول السري (PIN)" class="w-full p-3.5 rounded-2xl border-2 border-slate-200 font-bold text-sm outline-none focus:border-blue-900">
+                <button onclick="loginWithPin()" class="w-full py-3.5 rounded-2xl bg-yellow-400 text-blue-900 font-black shadow-lg hover:bg-yellow-300 transition">دخول بمعرّف الفريق</button>
+            </div>
+
+            <p id="login-error" class="text-red-600 text-xs font-bold text-center mt-4 hidden"></p>
+        </div>
+    </div>
+
+    <!-- واجهة لوحة التحكم بعد الدخول -->
+    <div id="dashboard-screen" class="hidden">
+        <header class="navy-bg text-white p-5 shadow-lg border-b-4 border-yellow-400">
+            <div class="max-w-6xl mx-auto flex flex-wrap justify-between items-center gap-3">
+                <div>
+                    <h1 class="text-xl font-black text-yellow-400">⚙️ لوحة تحكم ماركت الكابينة</h1>
+                    <p class="text-xs text-white/80 font-bold mt-0.5">
+                        المستخدم: <span id="current-user-label" class="text-yellow-300"></span> | الصلاحية: <span id="current-role-label" class="underline"></span>
+                    </p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="index.html" target="_blank" class="px-4 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-xs font-bold">عرض المتجر</a>
+                    <button onclick="logoutAdmin()" class="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-xs font-black">خروج</button>
+                </div>
+            </div>
+        </header>
+
+        <nav class="max-w-6xl mx-auto px-4 mt-5 flex gap-2 overflow-x-auto pb-2">
+            <button onclick="showSection('products')" id="tab-products" class="tab-btn active px-5 py-2.5 rounded-2xl bg-white text-blue-900 text-sm font-bold shadow whitespace-nowrap">🛒 المنتجات</button>
+            <button onclick="showSection('orders')" id="tab-orders" class="tab-btn px-5 py-2.5 rounded-2xl bg-white text-blue-900 text-sm font-bold shadow whitespace-nowrap">📦 الطلبات</button>
+            <button onclick="showSection('settings')" id="tab-settings" class="tab-btn px-5 py-2.5 rounded-2xl bg-white text-blue-900 text-sm font-bold shadow whitespace-nowrap">🛠️ الإعدادات</button>
+            <button onclick="showSection('team')" id="tab-team" class="tab-btn px-5 py-2.5 rounded-2xl bg-white text-blue-900 text-sm font-bold shadow whitespace-nowrap">👥 الفريق والصلاحيات</button>
+        </nav>
+
+        <main class="max-w-6xl mx-auto px-4 mt-5 space-y-6">
+
+            <!-- قسم المنتجات -->
+            <section id="sec-products" class="space-y-6">
+                <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+                    <h2 id="product-form-title" class="text-lg font-black text-blue-900 mb-4">➕ إضافة مادة جديدة</h2>
+                    <form id="product-form" onsubmit="saveProduct(event)" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <input type="hidden" id="edit-product-id">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">اسم المادة</label>
+                            <input type="text" id="prod-name" required placeholder="مثال: رز عنبر 5 كغم" class="w-full p-3 rounded-xl border font-bold text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">السعر (د.ع)</label>
+                            <input type="number" id="prod-price" required min="0" placeholder="12000" class="w-full p-3 rounded-xl border font-bold text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">القسم</label>
+                            <input type="text" id="prod-cat" list="categories-datalist" required placeholder="مواد غذائية، ألبان، منظفات..." class="w-full p-3 rounded-xl border font-bold text-sm">
+                            <datalist id="categories-datalist"></datalist>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">حالة التوفر</label>
+                            <select id="prod-available" class="w-full p-3 rounded-xl border font-bold text-sm bg-white">
+                                <option value="true">متوفر</option>
+                                <option value="false">نفذت الكمية</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">رفع صورة من الجهاز (Cloudinary)</label>
+                            <input type="file" id="prod-image-file" accept="image/*" onchange="uploadImageToCloudinary(this)" class="w-full p-2 rounded-xl border text-xs font-bold bg-slate-50">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">رابط الصورة (يُملأ تلقائياً أو يدوياً)</label>
+                            <input type="url" id="prod-image-url" placeholder="https://res.cloudinary.com/..." class="w-full p-3 rounded-xl border font-bold text-xs">
+                        </div>
+                        <div class="md:col-span-2 lg:col-span-3 flex items-center justify-between pt-2">
+                            <div class="flex items-center gap-3">
+                                <img id="prod-preview" src="https://ui-avatars.com/api/?name=K&background=facc15&color=1e3a8a" class="w-14 h-14 rounded-2xl object-cover border">
+                                <span id="upload-status" class="text-xs font-bold text-blue-900"></span>
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="button" onclick="resetProductForm()" class="px-5 py-3 rounded-2xl bg-slate-200 text-slate-800 font-bold text-sm">إلغاء</button>
+                                <button type="submit" id="save-prod-btn" class="px-7 py-3 rounded-2xl bg-blue-900 text-yellow-400 font-black text-sm shadow">حفظ المادة</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+                    <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+                        <h2 class="text-lg font-black text-blue-900">📋 قائمة المواد (<span id="products-count">0</span>)</h2>
+                        <input type="text" id="admin-prod-search" oninput="renderAdminProducts()" placeholder="بحث سريع في المواد..." class="p-2.5 px-4 rounded-xl border text-sm font-bold">
+                    </div>
+                    <div id="admin-products-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                </div>
+            </section>
+
+            <!-- قسم الطلبات -->
+            <section id="sec-orders" class="hidden bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+                <h2 class="text-lg font-black text-blue-900 mb-4">📦 الطلبات الواردة من المتجر</h2>
+                <div id="admin-orders-list" class="space-y-3"></div>
+            </section>
+
+            <!-- قسم الإعدادات -->
+            <section id="sec-settings" class="hidden bg-white rounded-3xl p-6 shadow-sm border border-slate-200 max-w-2xl">
+                <h2 class="text-lg font-black text-blue-900 mb-4">🛠️ إعدادات المتجر والمساعد</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">اسم المتجر</label>
+                        <input type="text" id="set-store-name" class="w-full p-3 rounded-xl border font-bold text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">رقم الواتساب لاستقبال الطلبات (بدون +)</label>
+                        <input type="text" id="set-whatsapp" placeholder="9647760982880" class="w-full p-3 rounded-xl border font-bold text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">رسالة الترحيب في المساعد الذكي</label>
+                        <input type="text" id="set-bot-welcome" class="w-full p-3 rounded-xl border font-bold text-sm">
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" id="set-store-open" class="w-5 h-5">
+                        <label for="set-store-open" class="text-sm font-bold text-blue-900">المتجر مفتوح ويستقبل الطلبات حالياً</label>
+                    </div>
+                    <button onclick="saveStoreSettings()" class="px-7 py-3 rounded-2xl bg-blue-900 text-yellow-400 font-black text-sm">حفظ الإعدادات</button>
+                </div>
+            </section>
+
+            <!-- قسم الفريق والصلاحيات -->
+            <section id="sec-team" class="hidden space-y-6">
+                <div id="owner-only-team-box" class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+                    <h2 class="text-lg font-black text-blue-900 mb-2">👥 إضافة عضو فريق أو مسؤول جديد</h2>
+                    <p class="text-xs text-slate-500 font-bold mb-4">أضف بريد الشخص الإلكتروني ليتمكن من الدخول عبر حسابه، أو أنشئ له معرّف ورمز دخول سريع (ID + PIN).</p>
+                    <form onsubmit="addTeamMember(event)" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+                        <input type="text" id="staff-name" required placeholder="اسم الموظف / المشرف" class="p-3 rounded-xl border font-bold text-sm">
+                        <input type="email" id="staff-email" placeholder="بريد الشخص (اختياري)" class="p-3 rounded-xl border font-bold text-sm">
+                        <input type="text" id="staff-code" required placeholder="معرّف الدخول (مثال: STAFF02)" class="p-3 rounded-xl border font-bold text-sm uppercase">
+                        <input type="text" id="staff-pin" required placeholder="رمز الدخول (مثال: 1234)" class="p-3 rounded-xl border font-bold text-sm">
+                        <select id="staff-role" class="p-3 rounded-xl border font-bold text-sm bg-white">
+                            <option value="manager">مدير (منتجات + طلبات)</option>
+                            <option value="orders">متابعة طلبات وتوفر فقط</option>
+                        </select>
+                        <div class="md:col-span-2 lg:col-span-5 flex justify-end">
+                            <button type="submit" class="px-6 py-3 rounded-2xl bg-blue-900 text-yellow-400 font-black text-sm">إضافة العضو وحفظ الصلاحية</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+                    <h2 class="text-lg font-black text-blue-900 mb-4">🔑 الأعضاء والصلاحيات المسجلة</h2>
+                    <div id="team-members-list" class="space-y-3"></div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+        import {
+            getFirestore, collection, doc, setDoc, addDoc, updateDoc, deleteDoc,
+            onSnapshot, query, orderBy, getDocs, where
+        } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+        const OWNER_EMAIL = "Mujtaba.mm2001@gmail.com";
+        const CLOUDINARY_CLOUD_NAME = "rd9c0zmh";
+        const CLOUDINARY_UPLOAD_PRESET = "alkabeena_products";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAqhKx_pxcaY_ZBOas8TrvYWwxY_2nqTjY",
+            authDomain: "alkabeena-market.firebaseapp.com",
+            projectId: "alkabeena-market",
+            storageBucket: "alkabeena-market.firebasestorage.app",
+            messagingSenderId: "553012419505",
+            appId: "1:553012419505:web:ac88ced142b709627ffb90",
+            measurementId: "G-EGN58XTB4Q"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUserSession = null; // { name, email, code, role, type }
+        let productsCache = [];
+        let teamCache = [];
+
+        window.switchLoginMode = function(mode) {
+            const isEmail = mode === 'email';
+            document.getElementById('email-login-box').classList.toggle('hidden', !isEmail);
+            document.getElementById('pin-login-box').classList.toggle('hidden', isEmail);
+            document.getElementById('mode-email-btn').className = isEmail
+                ? 'flex-1 py-2 rounded-xl text-xs font-black bg-blue-900 text-white'
+                : 'flex-1 py-2 rounded-xl text-xs font-black text-blue-900';
+            document.getElementById('mode-pin-btn').className = !isEmail
+                ? 'flex-1 py-2 rounded-xl text-xs font-black bg-yellow-400 text-blue-900'
+                : 'flex-1 py-2 rounded-xl text-xs font-black text-blue-900';
+        };
+
+        function showLoginError(msg) {
+            const el = document.getElementById('login-error');
+            el.textContent = msg;
+            el.classList.remove('hidden');
+        }
+
+        window.loginWithEmail = async function() {
+            const email = document.getElementById('login-email').value.trim();
+            const pass = document.getElementById('login-password').value;
+            document.getElementById('login-error').classList.add('hidden');
+            try {
+                const cred = await signInWithEmailAndPassword(auth, email, pass);
+                const userEmail = (cred.user.email || '').toLowerCase();
+                if (userEmail === OWNER_EMAIL.toLowerCase()) {
+                    startDashboard({ name: "مجتبى (المالك)", email: cred.user.email, role: "owner", type: "auth" });
+                } else {
+                    const q = query(collection(db, "staff_users"), where("email", "==", userEmail), where("active", "==", true));
+                    const snap = await getDocs(q);
+                    if (!snap.empty) {
+                        const docData = snap.docs[0].data();
+                        startDashboard({ name: docData.name, email: cred.user.email, role: docData.role || "manager", type: "auth" });
+                    } else {
+                        await signOut(auth);
+                        showLoginError("هذا البريد غير مضاف ضمن صلاحيات لوحة التحكم.");
+                    }
+                }
+            } catch (e) {
+                showLoginError("تعذر تسجيل الدخول. تأكد من البريد وكلمة المرور وتفعيل Email/Password في Firebase.");
+            }
+        };
+
+        window.loginWithPin = async function() {
+            const code = document.getElementById('login-staff-id').value.trim().toUpperCase();
+            const pin = document.getElementById('login-staff-pin').value.trim();
+            document.getElementById('login-error').classList.add('hidden');
+            if (!code || !pin) return showLoginError("أدخل المعرّف ورمز الدخول.");
+
+            try {
+                const q = query(collection(db, "staff_users"), where("code", "==", code), where("pin", "==", pin), where("active", "==", true));
+                const snap = await getDocs(q);
+                if (snap.empty) {
+                    return showLoginError("المعرّف أو رمز الدخول غير صحيح أو الحساب معطّل.");
+                }
+                const data = snap.docs[0].data();
+                sessionStorage.setItem("alkabeena_staff_session", JSON.stringify({
+                    name: data.name,
+                    email: data.email || "-",
+                    code: data.code,
+                    role: data.role || "orders",
+                    type: "pin"
+                }));
+                startDashboard({
+                    name: data.name,
+                    email: data.email || "-",
+                    code: data.code,
+                    role: data.role || "orders",
+                    type: "pin"
+                });
+            } catch (e) {
+                showLoginError("حدث خطأ أثناء التحقق من المعرّف.");
+            }
+        };
+
+        window.logoutAdmin = async function() {
+            sessionStorage.removeItem("alkabeena_staff_session");
+            if (auth.currentUser) await signOut(auth);
+            location.reload();
+        };
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userEmail = (user.email || '').toLowerCase();
+                if (userEmail === OWNER_EMAIL.toLowerCase()) {
+                    startDashboard({ name: "مجتبى (المالك)", email: user.email, role: "owner", type: "auth" });
+                } else {
+                    const q = query(collection(db, "staff_users"), where("email", "==", userEmail), where("active", "==", true));
+                    const snap = await getDocs(q);
+                    if (!snap.empty) {
+                        const d = snap.docs[0].data();
+                        startDashboard({ name: d.name, email: user.email, role: d.role || "manager", type: "auth" });
+                    }
+                }
+            } else {
+                const savedPinSession = sessionStorage.getItem("alkabeena_staff_session");
+                if (savedPinSession) {
+                    startDashboard(JSON.parse(savedPinSession));
+                }
+            }
+        });
+
+        function startDashboard(session) {
+            currentUserSession = session;
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('dashboard-screen').classList.remove('hidden');
+
+            document.getElementById('current-user-label').textContent = session.code ? `${session.name} (${session.code})` : `${session.name} (${session.email})`;
+            const roleNames = { owner: "المالك الأساسي", manager: "مدير", orders: "متابعة طلبات وتوفر" };
+            document.getElementById('current-role-label').textContent = roleNames[session.role] || session.role;
+
+            const isOwner = session.role === "owner";
+            document.getElementById('owner-only-team-box').classList.toggle('hidden', !isOwner);
+            if (session.role === "orders") {
+                document.getElementById('tab-settings').classList.add('hidden');
+            }
+
+            listenProducts();
+            listenOrders();
+            listenSettings();
+            listenTeam();
+        }
+
+        window.showSection = function(sec) {
+            ['products', 'orders', 'settings', 'team'].forEach(s => {
+                document.getElementById('sec-' + s).classList.toggle('hidden', s !== sec);
+                document.getElementById('tab-' + s).classList.toggle('active', s === sec);
+            });
+        };
+
+        window.uploadImageToCloudinary = async function(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const statusEl = document.getElementById('upload-status');
+            statusEl.textContent = "⏳ جاري رفع الصورة إلى Cloudinary...";
+
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+
+            try {
+                const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+                    method: "POST",
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.secure_url) {
+                    document.getElementById('prod-image-url').value = data.secure_url;
+                    document.getElementById('prod-preview').src = data.secure_url;
+                    statusEl.textContent = "✅ تم رفع الصورة بنجاح";
+                } else {
+                    statusEl.textContent = "⚠️ فشل رفع الصورة، تأكد من إعداد الـ Preset";
+                }
+            } catch (e) {
+                statusEl.textContent = "⚠️ خطأ في الاتصال بـ Cloudinary";
+            }
+        };
+
+        window.saveProduct = async function(e) {
+            e.preventDefault();
+            if (currentUserSession.role === "orders") return alert("صلاحيتك تقتصر على الطلبات وحالة التوفر.");
+
+            const id = document.getElementById('edit-product-id').value;
+            const name = document.getElementById('prod-name').value.trim();
+            const price = parseInt(document.getElementById('prod-price').value) || 0;
+            const category = document.getElementById('prod-cat').value.trim() || "عام";
+            const available = document.getElementById('prod-available').value === "true";
+            const img = document.getElementById('prod-image-url').value.trim() || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=facc15&color=1e3a8a`;
+
+            const payload = { name, price, category, available, img, updatedAt: Date.now() };
+            if (id) {
+                await updateDoc(doc(db, "products", id), payload);
+            } else {
+                payload.createdAt = Date.now();
+                await addDoc(collection(db, "products"), payload);
+            }
+            resetProductForm();
+        };
+
+        window.editProduct = function(id) {
+            const p = productsCache.find(item => item.id === id);
+            if (!p) return;
+            document.getElementById('edit-product-id').value = p.id;
+            document.getElementById('prod-name').value = p.name;
+            document.getElementById('prod-price').value = p.price;
+            document.getElementById('prod-cat').value = p.category;
+            document.getElementById('prod-available').value = String(p.available !== false);
+            document.getElementById('prod-image-url').value = p.img || '';
+            document.getElementById('prod-preview').src = p.img || '';
+            document.getElementById('product-form-title').textContent = "✏️ تعديل مادة: " + p.name;
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        };
+
+        window.toggleProductStock = async function(id, currentState) {
+            await updateDoc(doc(db, "products", id), { available: !currentState });
+        };
+
+        window.deleteProduct = async function(id) {
+            if (currentUserSession.role === "orders") return alert("ليس لديك صلاحية حذف المواد.");
+            if (!confirm("هل تريد حذف هذه المادة نهائياً؟")) return;
+            await deleteDoc(doc(db, "products", id));
+        };
+
+        window.resetProductForm = function() {
+            document.getElementById('product-form').reset();
+            document.getElementById('edit-product-id').value = '';
+            document.getElementById('prod-preview').src = 'https://ui-avatars.com/api/?name=K&background=facc15&color=1e3a8a';
+            document.getElementById('upload-status').textContent = '';
+            document.getElementById('product-form-title').textContent = "➕ إضافة مادة جديدة";
+        };
+
+        function listenProducts() {
+            onSnapshot(collection(db, "products"), (snap) => {
+                productsCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                const cats = [...new Set(productsCache.map(p => p.category).filter(Boolean))];
+                document.getElementById('categories-datalist').innerHTML = cats.map(c => `<option value="${c}">`).join('');
+                renderAdminProducts();
+            });
+        }
+
+        window.renderAdminProducts = function() {
+            const q = (document.getElementById('admin-prod-search').value || '').toLowerCase();
+            const list = productsCache.filter(p => (p.name || '').toLowerCase().includes(q) || (p.category || '').toLowerCase().includes(q));
+            document.getElementById('products-count').textContent = list.length;
+
+            const canEditFull = currentUserSession.role !== "orders";
+            document.getElementById('admin-products-list').innerHTML = list.map(p => `
+                <div class="border rounded-2xl p-4 flex gap-3 items-center justify-between ${p.available === false ? 'bg-red-50/50 border-red-200' : 'bg-slate-50 border-slate-200'}">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <img src="${p.img}" class="w-14 h-14 rounded-xl object-cover bg-white border shrink-0">
+                        <div class="min-w-0">
+                            <p class="font-black text-sm text-slate-800 truncate">${p.name}</p>
+                            <p class="text-xs font-bold text-blue-900">${Number(p.price || 0).toLocaleString()} د.ع • <span class="text-slate-500">${p.category || 'عام'}</span></p>
+                            <span class="inline-block mt-1 text-[11px] font-bold px-2 py-0.5 rounded-full ${p.available === false ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">
+                                ${p.available === false ? 'نفذت الكمية' : 'متوفر'}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-1.5 shrink-0">
+                        <button onclick="toggleProductStock('${p.id}', ${p.available !== false})" class="px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 text-xs font-bold">تبديل التوفر</button>
+                        ${canEditFull ? `<button onclick="editProduct('${p.id}')" class="px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 text-xs font-bold">تعديل</button>` : ''}
+                        ${canEditFull ? `<button onclick="deleteProduct('${p.id}')" class="px-2.5 py-1 rounded-lg bg-red-100 text-red-700 text-xs font-bold">حذف</button>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        };
+
+        function listenOrders() {
+            const q = query(collection(db, "orders"), orderBy("createdAt", "desc"));
+            onSnapshot(q, (snap) => {
+                const orders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                document.getElementById('admin-orders-list').innerHTML = orders.length ? orders.map(o => `
+                    <div class="border rounded-2xl p-4 bg-slate-50 space-y-2">
+                        <div class="flex flex-wrap justify-between items-center gap-2">
+                            <span class="font-black text-blue-900">طلب #${o.id.slice(0, 6).toUpperCase()} — ${Number(o.total || 0).toLocaleString()} د.ع</span>
+                            <select onchange="updateOrderStatus('${o.id}', this.value)" class="p-1.5 rounded-xl border text-xs font-bold bg-white">
+                                <option value="قيد الانتظار" ${o.status === 'قيد الانتظار' ? 'selected' : ''}>قيد الانتظار</option>
+                                <option value="قيد التجهيز" ${o.status === 'قيد التجهيز' ? 'selected' : ''}>قيد التجهيز</option>
+                                <option value="تم التوصيل" ${o.status === 'تم التوصيل' ? 'selected' : ''}>تم التوصيل</option>
+                                <option value="ملغي" ${o.status === 'ملغي' ? 'selected' : ''}>ملغي</option>
+                            </select>
+                        </div>
+                        <p class="text-xs font-bold text-slate-700">📍 العنوان / الهاتف: ${o.address || '-'}</p>
+                        <div class="text-xs font-bold text-slate-600 bg-white p-3 rounded-xl border">
+                            ${(o.items || []).map(i => `<div>• ${i.name} (×${i.qty}) = ${(i.qty * i.price).toLocaleString()} د.ع</div>`).join('')}
+                        </div>
+                    </div>
+                `).join('') : '<p class="text-sm font-bold text-slate-500">لا توجد طلبات مسجلة حتى الآن.</p>';
+            });
+        }
+
+        window.updateOrderStatus = async function(id, status) {
+            await updateDoc(doc(db, "orders", id), { status });
+        };
+
+        function listenSettings() {
+            onSnapshot(doc(db, "settings", "store"), (snap) => {
+                const d = snap.exists() ? snap.data() : {};
+                document.getElementById('set-store-name').value = d.storeName || "ماركت الكابينة";
+                document.getElementById('set-whatsapp').value = d.whatsapp || "9647760982880";
+                document.getElementById('set-bot-welcome').value = d.botWelcome || "يا هلا بيك بماركت الكابينة! شلون أكدر أساعدك اليوم؟ 😊";
+                document.getElementById('set-store-open').checked = d.isOpen !== false;
+            });
+        }
+
+        window.saveStoreSettings = async function() {
+            await setDoc(doc(db, "settings", "store"), {
+                storeName: document.getElementById('set-store-name').value.trim() || "ماركت الكابينة",
+                whatsapp: document.getElementById('set-whatsapp').value.trim() || "9647760982880",
+                botWelcome: document.getElementById('set-bot-welcome').value.trim(),
+                isOpen: document.getElementById('set-store-open').checked
+            }, { merge: true });
+            alert("تم حفظ إعدادات المتجر بنجاح.");
+        };
+
+        function listenTeam() {
+            onSnapshot(collection(db, "staff_users"), (snap) => {
+                teamCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderTeam();
+            });
+        }
+
+        window.addTeamMember = async function(e) {
+            e.preventDefault();
+            if (currentUserSession.role !== "owner") return alert("فقط المالك الأساسي يمكنه إضافة أعضاء الفريق.");
+            const name = document.getElementById('staff-name').value.trim();
+            const email = document.getElementById('staff-email').value.trim().toLowerCase();
+            const code = document.getElementById('staff-code').value.trim().toUpperCase();
+            const pin = document.getElementById('staff-pin').value.trim();
+            const role = document.getElementById('staff-role').value;
+
+            await addDoc(collection(db, "staff_users"), { name, email, code, pin, role, active: true });
+            e.target.reset();
+            alert("تمت إضافة العضو بنجاح.");
+        };
+
+        window.toggleStaffActive = async function(id, active) {
+            if (currentUserSession.role !== "owner") return;
+            await updateDoc(doc(db, "staff_users", id), { active: !active });
+        };
+
+        window.deleteStaffMember = async function(id) {
+            if (currentUserSession.role !== "owner") return;
+            if (!confirm("حذف هذا العضو من قائمة الفريق؟")) return;
+            await deleteDoc(doc(db, "staff_users", id));
+        };
+
+        function renderTeam() {
+            const isOwner = currentUserSession && currentUserSession.role === "owner";
+            document.getElementById('team-members-list').innerHTML = `
+                <div class="border rounded-2xl p-4 bg-yellow-50 flex justify-between items-center">
+                    <div>
+                        <p class="font-black text-blue-900 text-sm">مجتبى (المالك الأساسي)</p>
+                        <p class="text-xs font-bold text-slate-600">${OWNER_EMAIL}</p>
+                    </div>
+                    <span class="px-3 py-1 rounded-full bg-blue-900 text-yellow-400 text-xs font-black">OWNER</span>
+                </div>
+            ` + teamCache.map(m => `
+                <div class="border rounded-2xl p-4 bg-slate-50 flex flex-wrap justify-between items-center gap-3">
+                    <div>
+                        <p class="font-black text-slate-800 text-sm">${m.name} — <span class="text-blue-900">معرّف: ${m.code}</span></p>
+                        <p class="text-xs font-bold text-slate-500">البريد: ${m.email || '-'} | الرمز: ${isOwner ? m.pin : '••••'} | الدور: ${m.role === 'manager' ? 'مدير' : 'متابعة طلبات وتوفر'}</p>
+                    </div>
+                    ${isOwner ? `
+                        <div class="flex gap-2">
+                            <button onclick="toggleStaffActive('${m.id}', ${m.active !== false})" class="px-3 py-1.5 rounded-xl text-xs font-bold ${m.active !== false ? 'bg-green-100 text-green-800' : 'bg-slate-200 text-slate-700'}">
+                                ${m.active !== false ? 'نشط' : 'معطّل'}
+                            </button>
+                            <button onclick="deleteStaffMember('${m.id}')" class="px-3 py-1.5 rounded-xl bg-red-100 text-red-700 text-xs font-bold">حذف</button>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+</html>
