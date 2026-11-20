@@ -22,14 +22,23 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        body { font-family: 'Tajawal', sans-serif; background-color: #f8fafc; user-select: none; -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; }
+        body { font-family: 'Tajawal', sans-serif; background-color: #f8fafc; user-select: none; -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; overflow-x: hidden; }
         .navy-blue { background-color: #1e3a8a; }
         .category-btn.active { background-color: #facc15; color: #1e3a8a; border-color: #1e3a8a; transform: scale(1.03); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         @keyframes logo-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; } }
         .animate-logo { animation: logo-pulse 2s infinite ease-in-out; }
-        @keyframes marquee-rtl { 0% { transform: translateX(-50%); } 100% { transform: translateX(0%); } }
-        .animate-marquee { display: flex; width: max-content; animation: marquee-rtl 22s linear infinite; }
+        @keyframes marquee-mobile-rtl {
+            0% { transform: translateX(50%); }
+            100% { transform: translateX(0%); }
+        }
+        .animate-marquee {
+            display: flex;
+            align-items: center;
+            width: max-content;
+            animation: marquee-mobile-rtl 18s linear infinite;
+            will-change: transform;
+        }
     </style>
 </head>
 <body class="pb-40">
@@ -41,14 +50,14 @@
     </div>
 
     <!-- شريط إعلاني علوي متحرك قابل للتعديل من لوحة الأدمن -->
-    <div class="bg-yellow-400 text-blue-900 py-2 overflow-hidden border-b border-blue-900/10 text-xs font-black">
-        <div id="ticker-track" class="animate-marquee gap-10">
-            <span>🚚 توصيل سريع داخل كربلاء — ماركت الكابينة</span>
-            <span>⭐ تسوق بذكاء وسهولة — مواد غذائية ومنزلية متكاملة</span>
-            <span>✏️ إمكانية تعديل طلبك بسهولة بعد التأكيد</span>
-            <span>🚚 توصيل سريع داخل كربلاء — ماركت الكابينة</span>
-            <span>⭐ تسوق بذكاء وسهولة — مواد غذائية ومنزلية متكاملة</span>
-            <span>✏️ إمكانية تعديل طلبك بسهولة بعد التأكيد</span>
+    <div class="bg-yellow-400 text-blue-900 py-2 overflow-hidden border-b border-blue-900/15 text-xs font-black">
+        <div id="ticker-track" class="animate-marquee gap-8">
+            <span class="whitespace-nowrap shrink-0">🚚 توصيل سريع داخل كربلاء — ماركت الكابينة</span>
+            <span class="whitespace-nowrap shrink-0">⭐ تسوق بذكاء وسهولة — مواد غذائية ومنزلية متكاملة</span>
+            <span class="whitespace-nowrap shrink-0">✏️ إمكانية تعديل طلبك بسهولة بعد التأكيد</span>
+            <span class="whitespace-nowrap shrink-0">🚚 توصيل سريع داخل كربلاء — ماركت الكابينة</span>
+            <span class="whitespace-nowrap shrink-0">⭐ تسوق بذكاء وسهولة — مواد غذائية ومنزلية متكاملة</span>
+            <span class="whitespace-nowrap shrink-0">✏️ إمكانية تعديل طلبك بسهولة بعد التأكيد</span>
         </div>
     </div>
 
@@ -83,7 +92,7 @@
     </div>
 
     <!-- عرض المنتجات بأسلوب الأقسام وبطاقات المتاجر -->
-    <main class="max-w-4xl mx-auto px-4 mt-5">
+    <main class="max-w-4xl mx-auto px-3.5 sm:px-4 mt-5">
         <div id="items-grid" class="space-y-8"></div>
     </main>
 
@@ -259,9 +268,9 @@
 
         function renderTickerMessages(messages) {
             const list = Array.isArray(messages) && messages.length ? messages : DEFAULT_TICKER_MESSAGES;
-            const repeated = [...list, ...list];
+            const repeated = [...list, ...list, ...list];
             document.getElementById('ticker-track').innerHTML = repeated
-                .map(msg => `<span>${msg}</span>`)
+                .map(msg => `<span class="whitespace-nowrap shrink-0">${msg}</span>`)
                 .join('');
         }
         renderTickerMessages(DEFAULT_TICKER_MESSAGES);
@@ -357,12 +366,12 @@
             const encodedImgs = encodeURIComponent(JSON.stringify(imgs));
 
             return `
-                <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden flex flex-col justify-between transition hover:shadow-md ${isSoldOut ? 'opacity-70' : ''}">
-                    <div>
-                        <div class="relative h-44 bg-slate-100 overflow-hidden cursor-pointer" onclick="openImageViewerByEncoded('${encodedImgs}', ${activeIdx})">
+                <div class="min-w-0 bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden flex flex-col justify-between transition hover:shadow-md ${isSoldOut ? 'opacity-70' : ''}">
+                    <div class="min-w-0">
+                        <div class="relative h-36 sm:h-44 bg-slate-100 overflow-hidden cursor-pointer" onclick="openImageViewerByEncoded('${encodedImgs}', ${activeIdx})">
                             <img src="${activeImg}" alt="${p.name}" class="w-full h-full object-cover">
-                            ${isSoldOut ? '<span class="absolute top-2.5 right-2.5 bg-red-600 text-white text-[11px] font-black px-3 py-1 rounded-full shadow">نفذت الكمية</span>' : ''}
-                            ${!isSoldOut && p.oldPrice > 0 ? '<span class="absolute top-2.5 left-2.5 bg-yellow-400 text-blue-900 text-[11px] font-black px-2.5 py-1 rounded-full shadow">عرض</span>' : ''}
+                            ${isSoldOut ? '<span class="absolute top-2 right-2 bg-red-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow">نفذت الكمية</span>' : ''}
+                            ${!isSoldOut && p.oldPrice > 0 ? '<span class="absolute top-2 left-2 bg-yellow-400 text-blue-900 text-[10px] font-black px-2.5 py-0.5 rounded-full shadow">عرض</span>' : ''}
                             ${imgs.length > 1 ? `
                                 <span class="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] font-black px-2 py-0.5 rounded-full">${activeIdx + 1}/${imgs.length}</span>
                                 <div class="absolute bottom-2 left-2 flex gap-1" onclick="event.stopPropagation()">
@@ -371,24 +380,24 @@
                                 </div>
                             ` : ''}
                         </div>
-                        <div class="p-3.5 text-right">
-                            <p class="text-[11px] font-bold text-slate-400 mb-0.5">${p.cat}</p>
-                            <h3 class="font-black text-slate-800 text-sm line-clamp-2 min-h-[2.5rem]">${p.name}</h3>
-                            <div class="mt-2 flex items-baseline gap-2">
-                                <span class="text-blue-900 font-black text-base">${p.price.toLocaleString()} د.ع</span>
-                                ${p.oldPrice > 0 ? `<span class="text-xs font-bold text-gray-400 line-through">${p.oldPrice.toLocaleString()}</span>` : ''}
+                        <div class="p-3 text-right min-w-0">
+                            <p class="text-[10px] font-bold text-slate-400 truncate">${p.cat}</p>
+                            <h3 class="font-black text-slate-800 text-xs sm:text-sm line-clamp-2 min-h-[2.25rem] mt-0.5">${p.name}</h3>
+                            <div class="mt-1.5 flex items-baseline gap-1.5 flex-wrap">
+                                <span class="text-blue-900 font-black text-sm sm:text-base">${p.price.toLocaleString()} د.ع</span>
+                                ${p.oldPrice > 0 ? `<span class="text-[11px] font-bold text-gray-400 line-through">${p.oldPrice.toLocaleString()}</span>` : ''}
                             </div>
                         </div>
                     </div>
 
-                    <div class="px-3.5 pb-3.5 pt-1">
+                    <div class="px-3 pb-3 pt-1">
                         ${isSoldOut ? `
-                            <button disabled class="w-full py-2.5 rounded-2xl bg-slate-100 text-slate-400 font-black text-xs cursor-not-allowed">غير متوفر حالياً</button>
+                            <button disabled class="w-full py-2 rounded-2xl bg-slate-100 text-slate-400 font-black text-xs cursor-not-allowed">غير متوفر حالياً</button>
                         ` : qty > 0 ? `
-                            <div class="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-2xl px-2 py-1.5">
-                                <button type="button" onclick="updateQty('${p.name.replace(/'/g, "\\'")}', -1)" class="w-8 h-8 bg-white rounded-xl font-black text-red-600 shadow-sm">-</button>
-                                <span class="font-black text-blue-900 text-base">${qty}</span>
-                                <button type="button" onclick="updateQty('${p.name.replace(/'/g, "\\'")}', 1, ${p.price})" class="w-8 h-8 bg-yellow-400 text-blue-900 rounded-xl font-black shadow-sm">+</button>
+                            <div class="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-2xl px-1.5 py-1">
+                                <button type="button" onclick="updateQty('${p.name.replace(/'/g, "\\'")}', -1)" class="w-7 h-7 bg-white rounded-xl font-black text-red-600 shadow-sm">-</button>
+                                <span class="font-black text-blue-900 text-sm">${qty}</span>
+                                <button type="button" onclick="updateQty('${p.name.replace(/'/g, "\\'")}', 1, ${p.price})" class="w-7 h-7 bg-yellow-400 text-blue-900 rounded-xl font-black shadow-sm">+</button>
                             </div>
                         ` : `
                             <button type="button" onclick="updateQty('${p.name.replace(/'/g, "\\'")}', 1, ${p.price})" class="w-full py-2.5 rounded-2xl bg-blue-900 text-yellow-400 hover:bg-blue-800 font-black text-xs shadow active:scale-95 transition">إضافة المنتج</button>
@@ -423,7 +432,7 @@
                         <div class="flex justify-between items-center mb-3">
                             <h2 class="text-lg font-black text-blue-900">${q ? 'نتائج البحث' : currentCategory} <span class="text-xs font-bold text-slate-500">(${filtered.length})</span></h2>
                         </div>
-                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                             ${filtered.map(renderProductCard).join('')}
                         </div>
                     </section>
@@ -446,7 +455,7 @@
                                 </button>
                             ` : ''}
                         </div>
-                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                             ${visibleItems.map(renderProductCard).join('')}
                         </div>
                     </section>
