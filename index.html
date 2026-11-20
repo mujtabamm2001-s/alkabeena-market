@@ -91,6 +91,15 @@
         </div>
     </div>
 
+    <!-- شريط وصل حديثاً -->
+    <section id="new-arrivals-section" class="max-w-4xl mx-auto px-3.5 sm:px-4 mt-4 hidden">
+        <div class="flex justify-between items-center mb-2.5">
+            <h2 class="text-base sm:text-lg font-black text-blue-900">✨ وصل حديثاً للسنتر</h2>
+            <span class="text-[11px] font-black bg-yellow-400 text-blue-900 px-3 py-0.5 rounded-full">جديد</span>
+        </div>
+        <div id="new-arrivals-list" class="flex gap-3 overflow-x-auto pb-2 no-scrollbar"></div>
+    </section>
+
     <!-- عرض المنتجات بأسلوب الأقسام وبطاقات المتاجر -->
     <main class="max-w-4xl mx-auto px-3.5 sm:px-4 mt-5">
         <div id="items-grid" class="space-y-8"></div>
@@ -142,6 +151,39 @@
         <button onclick="openModal()" class="bg-yellow-400 text-blue-900 px-6 py-3 rounded-2xl font-black text-sm active:scale-95 transition shadow">تثبيت الطلب</button>
     </div>
 
+    <!-- نافذة تفاصيل المنتج -->
+    <div id="product-detail-modal" class="fixed inset-0 bg-black/75 z-[83] hidden flex items-center justify-center p-4 backdrop-blur-sm" onclick="closeProductDetailModal()">
+        <div class="bg-white w-full max-w-md rounded-[35px] p-5 shadow-2xl text-right max-h-[90vh] overflow-y-auto space-y-4" onclick="event.stopPropagation()">
+            <div class="flex justify-between items-center border-b pb-2.5">
+                <span id="detail-cat" class="text-xs font-black bg-blue-50 text-blue-900 px-3 py-1 rounded-full"></span>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="shareCurrentDetailProduct()" class="px-3 py-1.5 rounded-xl bg-yellow-400 text-blue-900 text-xs font-black flex items-center gap-1 shadow-sm">
+                        <i class="fas fa-share-alt"></i> مشاركة
+                    </button>
+                    <button type="button" onclick="closeProductDetailModal()" class="text-gray-400 hover:text-gray-700 text-2xl font-bold leading-none">×</button>
+                </div>
+            </div>
+
+            <div class="relative h-60 bg-slate-100 rounded-3xl overflow-hidden cursor-pointer border" onclick="openDetailImageZoom()">
+                <img id="detail-main-img" src="" class="w-full h-full object-contain">
+                <span id="detail-img-badge" class="hidden absolute bottom-2 right-2 bg-black/70 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full"></span>
+            </div>
+
+            <div id="detail-thumbs" class="flex gap-2 overflow-x-auto pb-1 no-scrollbar"></div>
+
+            <div class="space-y-2">
+                <h2 id="detail-name" class="text-xl font-black text-slate-900"></h2>
+                <div class="flex items-baseline gap-2.5 flex-wrap">
+                    <span id="detail-price" class="text-2xl font-black text-blue-900"></span>
+                    <span id="detail-old-price" class="text-sm font-bold text-gray-400 line-through hidden"></span>
+                </div>
+                <p id="detail-desc" class="text-xs sm:text-sm font-bold text-slate-600 bg-slate-50 p-3 rounded-2xl border leading-relaxed"></p>
+            </div>
+
+            <div id="detail-action-area" class="pt-1"></div>
+        </div>
+    </div>
+
     <!-- نافذة السلة وتثبيت الطلب -->
     <div id="order-modal" class="fixed inset-0 bg-black/70 z-[80] hidden flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white w-full max-w-md rounded-[35px] p-6 shadow-2xl text-right max-h-[90vh] overflow-y-auto">
@@ -155,23 +197,75 @@
                 <button type="button" onclick="cancelEditMode()" class="underline text-red-600">إلغاء التعديل</button>
             </div>
 
-            <div id="cart-summary" class="mb-4 max-h-48 overflow-y-auto text-sm space-y-2 border-b border-dashed pb-3 px-1 font-bold"></div>
+            <div id="cart-summary" class="mb-4 max-h-44 overflow-y-auto text-sm space-y-2 border-b border-dashed pb-3 px-1 font-bold"></div>
+
+            <!-- طريقة الاستلام -->
+            <div class="mb-3.5">
+                <label class="block text-xs font-black text-blue-900 mb-1.5">🚚 طريقة الاستلام</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" id="method-delivery-btn" onclick="setOrderMethod('delivery')" class="py-2.5 px-3 rounded-2xl border-2 border-blue-900 bg-blue-900 text-yellow-400 font-black text-xs transition">توصيل للمنزل 🛵</button>
+                    <button type="button" id="method-pickup-btn" onclick="setOrderMethod('pickup')" class="py-2.5 px-3 rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-700 font-black text-xs transition">استلام من السنتر 🏪</button>
+                </div>
+            </div>
 
             <div class="space-y-3 mb-4">
                 <div>
-                    <label class="block text-xs font-black text-blue-900 mb-1">📍 العنوان (مطلوب حصراً)</label>
+                    <label class="block text-xs font-black text-blue-900 mb-1">👤 اسم الزبون (اختياري)</label>
+                    <input type="text" id="cust-name" placeholder="مثال: علي حسين" class="w-full p-3 bg-gray-50 rounded-2xl border-2 border-gray-200 text-right font-bold text-sm outline-none focus:border-blue-900">
+                </div>
+
+                <div id="delivery-zone-box">
+                    <label class="block text-xs font-black text-blue-900 mb-1">🗺️ المنطقة في الناصرية (لحساب التوصيل)</label>
+                    <select id="cust-zone" onchange="onZoneChange()" class="w-full p-3 bg-gray-50 rounded-2xl border-2 border-gray-200 text-right font-bold text-sm outline-none focus:border-blue-900"></select>
+                    <p id="free-delivery-hint" class="hidden text-[11px] font-black text-green-700 mt-1"></p>
+                </div>
+
+                <div>
+                    <label id="cust-address-label" class="block text-xs font-black text-blue-900 mb-1">📍 العنوان التفصيلي (مطلوب حصراً)</label>
                     <input type="text" id="cust-address" required placeholder="مثال: الناصرية - الإسكان الصناعي - قرب..." class="w-full p-3.5 bg-gray-50 rounded-2xl border-2 border-gray-200 text-right font-bold text-sm outline-none focus:border-blue-900">
                 </div>
+
                 <div>
                     <label class="block text-xs font-black text-blue-900 mb-1">📞 رقم الهاتف (مطلوب حصراً)</label>
                     <input type="tel" id="cust-phone" required placeholder="مثال: 07821465582" class="w-full p-3.5 bg-gray-50 rounded-2xl border-2 border-gray-200 text-right font-bold text-sm outline-none focus:border-blue-900">
                 </div>
+
+                <div>
+                    <label class="block text-xs font-black text-blue-900 mb-1">📝 ملاحظات إضافية (اختياري)</label>
+                    <input type="text" id="cust-notes" placeholder="مثال: اللون المطلوب، أو الاتصال قبل الوصول..." class="w-full p-3 bg-gray-50 rounded-2xl border-2 border-gray-200 text-right font-bold text-xs outline-none focus:border-blue-900">
+                </div>
+
+                <!-- كود الخصم -->
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3">
+                    <label class="block text-xs font-black text-blue-900 mb-1.5">🎟️ كود خصم (إن وجد)</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="promo-code-input" placeholder="أدخل الكود هنا..." class="flex-1 p-2.5 bg-white rounded-xl border font-black text-xs uppercase outline-none focus:border-blue-900">
+                        <button type="button" onclick="applyPromoCode()" class="px-4 py-2.5 bg-yellow-400 text-blue-900 rounded-xl font-black text-xs shrink-0">تطبيق</button>
+                    </div>
+                    <p id="promo-status-msg" class="text-[11px] font-black mt-1.5 hidden"></p>
+                </div>
+
                 <p id="order-form-error" class="text-red-600 text-xs font-black hidden bg-red-50 p-2.5 rounded-xl border border-red-200"></p>
             </div>
 
-            <div class="text-xl font-black text-blue-900 flex justify-between items-center bg-yellow-50 p-3.5 rounded-2xl mb-4">
-                <span>الإجمالي:</span>
-                <span><span id="final-price">0</span> د.ع</span>
+            <!-- ملخص الحساب -->
+            <div class="bg-yellow-50 border border-yellow-200 p-3.5 rounded-2xl mb-4 space-y-1.5 text-xs font-bold text-slate-700">
+                <div class="flex justify-between">
+                    <span>مجموع المواد:</span>
+                    <span><span id="subtotal-price">0</span> د.ع</span>
+                </div>
+                <div class="flex justify-between">
+                    <span>أجرة التوصيل:</span>
+                    <span id="delivery-fee-display">0 د.ع</span>
+                </div>
+                <div id="discount-row" class="hidden flex justify-between text-green-700 font-black">
+                    <span>الخصم (<span id="applied-promo-label"></span>):</span>
+                    <span>- <span id="discount-amount-display">0</span> د.ع</span>
+                </div>
+                <div class="border-t border-yellow-300 pt-2 text-lg font-black text-blue-900 flex justify-between items-center">
+                    <span>الإجمالي النهائي:</span>
+                    <span><span id="final-price">0</span> د.ع</span>
+                </div>
             </div>
 
             <div class="flex gap-2.5">
@@ -189,7 +283,7 @@
             </div>
             <h2 class="text-2xl font-black text-blue-900 mb-1">تم تأكيد الطلب بنجاح</h2>
             <p class="text-xs font-bold text-gray-500 mb-3">رقم الطلب: <span id="confirmed-order-code" class="text-blue-900 font-black"></span></p>
-            <div id="confirmed-order-details" class="bg-slate-50 border rounded-2xl p-3 text-right text-xs font-bold text-slate-700 space-y-1.5 mb-4 max-h-40 overflow-y-auto"></div>
+            <div id="confirmed-order-details" class="bg-slate-50 border rounded-2xl p-3 text-right text-xs font-bold text-slate-700 space-y-1.5 mb-4 max-h-44 overflow-y-auto"></div>
             <div class="flex flex-col gap-2">
                 <button type="button" onclick="startEditOrderFromSuccess()" class="w-full py-3 bg-yellow-400 text-blue-900 rounded-2xl font-black text-sm shadow">✏️ تعديل الطلب</button>
                 <button type="button" onclick="openMyOrdersFromSuccess()" class="w-full py-3 bg-blue-900 text-white rounded-2xl font-black text-sm">📦 عرض طلباتي ومتابعتها</button>
@@ -223,6 +317,9 @@
         </div>
     </div>
 
+    <!-- تنبيه خفيف (Toast) -->
+    <div id="toast-msg" class="fixed top-5 left-1/2 -translate-x-1/2 z-[110] bg-blue-900 text-yellow-400 px-5 py-2.5 rounded-full text-xs font-black shadow-2xl border border-yellow-400 hidden"></div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
         import { getFirestore, collection, doc, onSnapshot, addDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
@@ -241,20 +338,49 @@
         const db = getFirestore(app);
 
         const LOCAL_ORDERS_KEY = "alkabeena_customer_order_ids";
+        const CUSTOMER_PROFILE_KEY = "alkabeena_customer_profile";
         const DEFAULT_TICKER_MESSAGES = [
             "🏠 الكابينة سنتر — الناصرية: الإسكان الصناعي، النزلة الأولى، مقابل جامع الإسكان الكبير",
             "⭐ مواد منزلية ومنفذ متكامل — تسوق بذكاء وسهولة",
             "✏️ إمكانية تعديل طلبك بسهولة بعد التأكيد"
         ];
+        const DEFAULT_DELIVERY_ZONES = [
+            { name: "الإسكان الصناعي والمناطق القريبة", fee: 2000 },
+            { name: "مركز مدينة الناصرية", fee: 3000 },
+            { name: "أحياء الناصرية الأخرى", fee: 4000 }
+        ];
 
         let allProducts = [], cart = {}, currentCategory = 'الكل', expandedCategory = null;
         let cardImageIndices = {};
         let viewerImages = [], viewerIndex = 0;
-        let storeConfig = { storeName: "الكابينة سنتر | للتسوق المنزلي", whatsapp: "9647821465582", isOpen: true, tickerMessages: DEFAULT_TICKER_MESSAGES };
+        let detailProductId = null, detailImageIdx = 0;
+        let deepLinkHandled = false;
+        let orderMethod = 'delivery';
+        let appliedPromo = null;
+
+        let storeConfig = {
+            storeName: "الكابينة سنتر | للتسوق المنزلي",
+            whatsapp: "9647821465582",
+            isOpen: true,
+            tickerMessages: DEFAULT_TICKER_MESSAGES,
+            deliveryZones: DEFAULT_DELIVERY_ZONES,
+            freeDeliveryMin: 0,
+            categoryOrder: [],
+            promoCodes: []
+        };
+
         let savedOrderIds = JSON.parse(localStorage.getItem(LOCAL_ORDERS_KEY) || "[]");
         let liveOrdersMap = {};
         let editingOrderId = null;
         let lastConfirmedOrderId = null;
+
+        function showToast(msg) {
+            const el = document.getElementById('toast-msg');
+            el.textContent = msg;
+            el.classList.remove('hidden');
+            clearTimeout(window._toastTimer);
+            window._toastTimer = setTimeout(() => el.classList.add('hidden'), 2600);
+        }
 
         function persistSavedOrderIds() {
             localStorage.setItem(LOCAL_ORDERS_KEY, JSON.stringify(savedOrderIds));
@@ -266,6 +392,23 @@
         }
         updateMyOrdersBadge();
 
+        function loadCustomerProfileToForm() {
+            try {
+                const saved = JSON.parse(localStorage.getItem(CUSTOMER_PROFILE_KEY) || "{}");
+                if (saved.name && !document.getElementById('cust-name').value) document.getElementById('cust-name').value = saved.name;
+                if (saved.address && !document.getElementById('cust-address').value) document.getElementById('cust-address').value = saved.address;
+                if (saved.phone && !document.getElementById('cust-phone').value) document.getElementById('cust-phone').value = saved.phone;
+                if (saved.zone) {
+                    const sel = document.getElementById('cust-zone');
+                    if (Array.from(sel.options).some(o => o.value === saved.zone)) sel.value = saved.zone;
+                }
+            } catch (e) {}
+        }
+
+        function saveCustomerProfile(profile) {
+            localStorage.setItem(CUSTOMER_PROFILE_KEY, JSON.stringify(profile));
+        }
+
         function renderTickerMessages(messages) {
             const list = Array.isArray(messages) && messages.length ? messages : DEFAULT_TICKER_MESSAGES;
             const repeated = [...list, ...list, ...list];
@@ -274,6 +417,19 @@
                 .join('');
         }
         renderTickerMessages(DEFAULT_TICKER_MESSAGES);
+
+        function renderDeliveryZonesSelect() {
+            const zones = Array.isArray(storeConfig.deliveryZones) && storeConfig.deliveryZones.length
+                ? storeConfig.deliveryZones
+                : DEFAULT_DELIVERY_ZONES;
+            const sel = document.getElementById('cust-zone');
+            const prevVal = sel.value;
+            sel.innerHTML = zones.map(z => `<option value="${z.name}" data-fee="${Number(z.fee) || 0}">${z.name} (${Number(z.fee || 0).toLocaleString()} د.ع)</option>`).join('');
+            if (prevVal && zones.some(z => z.name === prevVal)) sel.value = prevVal;
+            loadCustomerProfileToForm();
+            updateUI();
+        }
+        renderDeliveryZonesSelect();
 
         window.toggleChat = function() {
             document.getElementById('chat-window').classList.toggle('hidden');
@@ -304,8 +460,23 @@
                 document.getElementById('bot-welcome-msg').textContent = d.botWelcome;
             }
             renderTickerMessages(d.tickerMessages);
+            renderDeliveryZonesSelect();
             document.getElementById('closed-banner').classList.toggle('hidden', d.isOpen !== false);
+            render();
         });
+
+        function sortCategoriesByOrder(catsArray) {
+            const order = Array.isArray(storeConfig.categoryOrder) ? storeConfig.categoryOrder : [];
+            if (!order.length) return catsArray;
+            return [...catsArray].sort((a, b) => {
+                const ia = order.indexOf(a);
+                const ib = order.indexOf(b);
+                if (ia === -1 && ib === -1) return 0;
+                if (ia === -1) return 1;
+                if (ib === -1) return -1;
+                return ia - ib;
+            });
+        }
 
         onSnapshot(collection(db, "products"), (snap) => {
             const cats = new Set();
@@ -322,21 +493,39 @@
                 return {
                     id: d.id,
                     name: p.name || '',
+                    description: p.description || '',
                     price,
                     oldPrice: oldPrice > price ? oldPrice : 0,
                     img: images[0] || fallbackImg,
                     images,
                     cat,
-                    available: p.available !== false
+                    available: p.available !== false,
+                    isNew: p.isNew === true,
+                    createdAt: p.createdAt || 0
                 };
             }).filter(p => p.name);
 
-            document.getElementById('categories-list').innerHTML = Array.from(cats)
+            const sortedCats = sortCategoriesByOrder(Array.from(cats));
+            document.getElementById('categories-list').innerHTML = sortedCats
                 .map(c => `<button onclick="filterByCategory('${c.replace(/'/g, "\\'")}')" data-cat="${c}" class="category-btn px-5 py-2 rounded-full text-xs font-black bg-white text-blue-900 border-2 border-blue-900 whitespace-nowrap">${c}</button>`)
                 .join('');
             document.getElementById('loading-screen').style.display = 'none';
             syncActiveCategoryButtons();
+            renderNewArrivals();
             render();
+
+            if (detailProductId && !document.getElementById('product-detail-modal').classList.contains('hidden')) {
+                openProductDetailModal(detailProductId, detailImageIdx);
+            }
+
+            if (!deepLinkHandled) {
+                deepLinkHandled = true;
+                const params = new URLSearchParams(window.location.search);
+                const pid = params.get('product');
+                if (pid && allProducts.some(item => item.id === pid)) {
+                    openProductDetailModal(pid, 0);
+                }
+            }
         });
 
         onSnapshot(collection(db, "orders"), (snap) => {
@@ -349,6 +538,33 @@
                 renderMyOrdersList();
             }
         });
+
+        function renderNewArrivals() {
+            const sec = document.getElementById('new-arrivals-section');
+            const listEl = document.getElementById('new-arrivals-list');
+            const markedNew = allProducts.filter(p => p.isNew && p.available);
+            const items = markedNew.length
+                ? markedNew.slice(0, 8)
+                : [...allProducts].filter(p => p.available).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 6);
+
+            if (!items.length || currentCategory !== 'الكل' || document.getElementById('searchInput').value.trim()) {
+                sec.classList.add('hidden');
+                return;
+            }
+            sec.classList.remove('hidden');
+            listEl.innerHTML = items.map(p => `
+                <div onclick="openProductDetailModal('${p.id}', 0)" class="w-36 shrink-0 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden cursor-pointer active:scale-95 transition">
+                    <div class="relative h-24 bg-slate-100">
+                        <img src="${p.img}" alt="${p.name}" class="w-full h-full object-cover">
+                        <span class="absolute top-1.5 right-1.5 bg-blue-900 text-yellow-400 text-[9px] font-black px-2 py-0.5 rounded-full">جديد</span>
+                    </div>
+                    <div class="p-2.5 text-right">
+                        <p class="font-black text-slate-800 text-xs truncate">${p.name}</p>
+                        <p class="text-blue-900 font-black text-xs mt-0.5">${p.price.toLocaleString()} د.ع</p>
+                    </div>
+                </div>
+            `).join('');
+        }
 
         window.stepCardImage = function(prodId, delta, totalImages) {
             if (totalImages <= 1) return;
@@ -363,15 +579,15 @@
             const imgs = p.images && p.images.length ? p.images : [p.img];
             const activeIdx = (cardImageIndices[p.id] || 0) % imgs.length;
             const activeImg = imgs[activeIdx];
-            const encodedImgs = encodeURIComponent(JSON.stringify(imgs));
 
             return `
                 <div class="min-w-0 bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden flex flex-col justify-between transition hover:shadow-md ${isSoldOut ? 'opacity-70' : ''}">
-                    <div class="min-w-0">
-                        <div class="relative h-36 sm:h-44 bg-slate-100 overflow-hidden cursor-pointer" onclick="openImageViewerByEncoded('${encodedImgs}', ${activeIdx})">
+                    <div class="min-w-0 cursor-pointer" onclick="openProductDetailModal('${p.id}', ${activeIdx})">
+                        <div class="relative h-36 sm:h-44 bg-slate-100 overflow-hidden">
                             <img src="${activeImg}" alt="${p.name}" class="w-full h-full object-cover">
                             ${isSoldOut ? '<span class="absolute top-2 right-2 bg-red-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow">نفذت الكمية</span>' : ''}
                             ${!isSoldOut && p.oldPrice > 0 ? '<span class="absolute top-2 left-2 bg-yellow-400 text-blue-900 text-[10px] font-black px-2.5 py-0.5 rounded-full shadow">عرض</span>' : ''}
+                            ${!isSoldOut && p.isNew ? '<span class="absolute top-2 right-2 bg-blue-900 text-yellow-400 text-[10px] font-black px-2.5 py-0.5 rounded-full shadow">جديد</span>' : ''}
                             ${imgs.length > 1 ? `
                                 <span class="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] font-black px-2 py-0.5 rounded-full">${activeIdx + 1}/${imgs.length}</span>
                                 <div class="absolute bottom-2 left-2 flex gap-1" onclick="event.stopPropagation()">
@@ -381,7 +597,12 @@
                             ` : ''}
                         </div>
                         <div class="p-3 text-right min-w-0">
-                            <p class="text-[10px] font-bold text-slate-400 truncate">${p.cat}</p>
+                            <div class="flex justify-between items-center gap-1">
+                                <p class="text-[10px] font-bold text-slate-400 truncate">${p.cat}</p>
+                                <button type="button" onclick="event.stopPropagation(); shareProductLink('${p.id}', '${p.name.replace(/'/g, "\\'")}')" title="مشاركة رابط المادة" class="text-slate-400 hover:text-blue-900 text-xs px-1">
+                                    <i class="fas fa-share-alt"></i>
+                                </button>
+                            </div>
                             <h3 class="font-black text-slate-800 text-xs sm:text-sm line-clamp-2 min-h-[2.25rem] mt-0.5">${p.name}</h3>
                             <div class="mt-1.5 flex items-baseline gap-1.5 flex-wrap">
                                 <span class="text-blue-900 font-black text-sm sm:text-base">${p.price.toLocaleString()} د.ع</span>
@@ -410,9 +631,10 @@
         window.render = function() {
             const q = document.getElementById('searchInput').value.trim().toLowerCase();
             const grid = document.getElementById('items-grid');
+            renderNewArrivals();
 
             const matchesFilter = (p) => {
-                if (q && !p.name.toLowerCase().includes(q) && !(p.cat || '').toLowerCase().includes(q)) return false;
+                if (q && !p.name.toLowerCase().includes(q) && !(p.cat || '').toLowerCase().includes(q) && !(p.description || '').toLowerCase().includes(q)) return false;
                 if (currentCategory === 'تخفيضات') return p.oldPrice > 0;
                 if (currentCategory === 'أقل من 5000') return p.price > 0 && p.price < 5000;
                 if (currentCategory !== 'الكل') return p.cat === currentCategory;
@@ -440,7 +662,8 @@
                 return;
             }
 
-            const groupedCats = [...new Set(filtered.map(p => p.cat || 'عام'))];
+            const rawCats = [...new Set(filtered.map(p => p.cat || 'عام'))];
+            const groupedCats = sortCategoriesByOrder(rawCats);
             grid.innerHTML = groupedCats.map(cat => {
                 const catItems = filtered.filter(p => (p.cat || 'عام') === cat);
                 const isExpanded = expandedCategory === cat;
@@ -468,6 +691,108 @@
             render();
         };
 
+        window.openProductDetailModal = function(prodId, startIdx = 0) {
+            const p = allProducts.find(item => item.id === prodId);
+            if (!p) return;
+            detailProductId = prodId;
+            const imgs = p.images && p.images.length ? p.images : [p.img];
+            detailImageIdx = Math.max(0, Math.min(startIdx, imgs.length - 1));
+
+            document.getElementById('detail-cat').textContent = p.cat || 'عام';
+            document.getElementById('detail-name').textContent = p.name;
+            document.getElementById('detail-price').textContent = `${p.price.toLocaleString()} د.ع`;
+            const oldPriceEl = document.getElementById('detail-old-price');
+            if (p.oldPrice > 0) {
+                oldPriceEl.textContent = `${p.oldPrice.toLocaleString()} د.ع`;
+                oldPriceEl.classList.remove('hidden');
+            } else {
+                oldPriceEl.classList.add('hidden');
+            }
+            document.getElementById('detail-desc').textContent = p.description || 'متوفر لدى الكابينة سنتر للتسوق المنزلي — الناصرية، الإسكان الصناعي.';
+
+            syncDetailGallery(imgs);
+            syncDetailActionArea(p);
+            document.getElementById('product-detail-modal').classList.remove('hidden');
+        };
+
+        function syncDetailGallery(imgs) {
+            document.getElementById('detail-main-img').src = imgs[detailImageIdx] || '';
+            const badge = document.getElementById('detail-img-badge');
+            if (imgs.length > 1) {
+                badge.textContent = `${detailImageIdx + 1} / ${imgs.length}`;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+            document.getElementById('detail-thumbs').innerHTML = imgs.length > 1 ? imgs.map((url, i) => `
+                <button type="button" onclick="selectDetailThumb(${i})" class="w-14 h-14 rounded-2xl overflow-hidden border-2 shrink-0 ${i === detailImageIdx ? 'border-blue-900' : 'border-slate-200'}">
+                    <img src="${url}" class="w-full h-full object-cover">
+                </button>
+            `).join('') : '';
+        }
+
+        window.selectDetailThumb = function(idx) {
+            const p = allProducts.find(item => item.id === detailProductId);
+            if (!p) return;
+            const imgs = p.images && p.images.length ? p.images : [p.img];
+            detailImageIdx = idx;
+            syncDetailGallery(imgs);
+        };
+
+        window.openDetailImageZoom = function() {
+            const p = allProducts.find(item => item.id === detailProductId);
+            if (!p) return;
+            viewerImages = p.images && p.images.length ? p.images : [p.img];
+            viewerIndex = detailImageIdx;
+            syncViewerState();
+            document.getElementById('image-viewer').classList.remove('hidden');
+        };
+
+        function syncDetailActionArea(p) {
+            const area = document.getElementById('detail-action-area');
+            if (!p.available) {
+                area.innerHTML = '<button disabled class="w-full py-3.5 rounded-2xl bg-slate-100 text-slate-400 font-black text-sm">نفذت الكمية حالياً</button>';
+                return;
+            }
+            const qty = cart[p.name] ? cart[p.name].qty : 0;
+            if (qty > 0) {
+                area.innerHTML = `
+                    <div class="flex items-center justify-between bg-blue-50 border-2 border-blue-900 rounded-2xl p-2">
+                        <button type="button" onclick="updateQty('${p.name.replace(/'/g, "\\'")}', -1)" class="w-10 h-10 bg-white rounded-xl font-black text-red-600 text-lg shadow">-</button>
+                        <span class="font-black text-blue-900 text-lg">${qty} في السلة</span>
+                        <button type="button" onclick="updateQty('${p.name.replace(/'/g, "\\'")}', 1, ${p.price})" class="w-10 h-10 bg-yellow-400 text-blue-900 rounded-xl font-black text-lg shadow">+</button>
+                    </div>
+                `;
+            } else {
+                area.innerHTML = `<button type="button" onclick="updateQty('${p.name.replace(/'/g, "\\'")}', 1, ${p.price})" class="w-full py-3.5 rounded-2xl bg-blue-900 text-yellow-400 font-black text-sm shadow-lg">إضافة إلى السلة 🛒</button>`;
+            }
+        }
+
+        window.closeProductDetailModal = function() {
+            document.getElementById('product-detail-modal').classList.add('hidden');
+        };
+
+        window.shareProductLink = async function(prodId, prodName) {
+            const url = `${window.location.origin}${window.location.pathname}?product=${encodeURIComponent(prodId)}`;
+            if (navigator.share) {
+                try {
+                    await navigator.share({ title: prodName, text: `${prodName} — الكابينة سنتر للتسوق المنزلي`, url });
+                    return;
+                } catch (e) {}
+            }
+            try {
+                await navigator.clipboard.writeText(url);
+                showToast("تم نسخ رابط المادة بنجاح 🔗");
+            } catch (e) {
+                prompt("انسخ رابط المادة:", url);
+            }
+        };
+
+        window.shareCurrentDetailProduct = function() {
+            const p = allProducts.find(item => item.id === detailProductId);
+            if (p) shareProductLink(p.id, p.name);
+        };
+
         function syncViewerState() {
             const currentUrl = viewerImages[viewerIndex] || '';
             document.getElementById('full-image').src = currentUrl;
@@ -480,26 +805,6 @@
             }
         }
 
-        window.openImageViewerByEncoded = function(encodedImgs, startIdx = 0) {
-            try {
-                viewerImages = JSON.parse(decodeURIComponent(encodedImgs)) || [];
-            } catch (e) {
-                viewerImages = [];
-            }
-            viewerIndex = Math.max(0, Math.min(startIdx, viewerImages.length - 1));
-            if (!viewerImages.length) return;
-            syncViewerState();
-            document.getElementById('image-viewer').classList.remove('hidden');
-        };
-
-        window.openImageViewer = function(src) {
-            viewerImages = src ? [src] : [];
-            viewerIndex = 0;
-            if (!viewerImages.length) return;
-            syncViewerState();
-            document.getElementById('image-viewer').classList.remove('hidden');
-        };
-
         window.stepViewerImage = function(delta) {
             if (viewerImages.length <= 1) return;
             viewerIndex = (viewerIndex + delta + viewerImages.length) % viewerImages.length;
@@ -509,6 +814,98 @@
         window.closeImageViewer = function() {
             document.getElementById('image-viewer').classList.add('hidden');
         };
+
+        window.setOrderMethod = function(method) {
+            orderMethod = method;
+            const isDelivery = method === 'delivery';
+            document.getElementById('method-delivery-btn').className = isDelivery
+                ? 'py-2.5 px-3 rounded-2xl border-2 border-blue-900 bg-blue-900 text-yellow-400 font-black text-xs transition'
+                : 'py-2.5 px-3 rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-700 font-black text-xs transition';
+            document.getElementById('method-pickup-btn').className = !isDelivery
+                ? 'py-2.5 px-3 rounded-2xl border-2 border-blue-900 bg-blue-900 text-yellow-400 font-black text-xs transition'
+                : 'py-2.5 px-3 rounded-2xl border-2 border-slate-200 bg-slate-50 text-slate-700 font-black text-xs transition';
+            document.getElementById('delivery-zone-box').classList.toggle('hidden', !isDelivery);
+            document.getElementById('cust-address-label').textContent = isDelivery
+                ? '📍 العنوان التفصيلي (مطلوب حصراً)'
+                : '🏪 ملاحظة الاستلام من السنتر (اختياري)';
+            updateUI();
+        };
+
+        window.onZoneChange = function() {
+            updateUI();
+        };
+
+        window.applyPromoCode = function() {
+            const rawCode = (document.getElementById('promo-code-input').value || '').trim().toUpperCase();
+            const msgEl = document.getElementById('promo-status-msg');
+            msgEl.classList.remove('hidden', 'text-green-700', 'text-red-600');
+
+            if (!rawCode) {
+                appliedPromo = null;
+                msgEl.classList.add('hidden');
+                updateUI();
+                return;
+            }
+
+            const promos = Array.isArray(storeConfig.promoCodes) ? storeConfig.promoCodes : [];
+            const found = promos.find(c => String(c.code || '').trim().toUpperCase() === rawCode && c.active !== false);
+            if (!found) {
+                appliedPromo = null;
+                msgEl.textContent = "⚠️ كود الخصم غير صحيح أو منتهي الصلاحية.";
+                msgEl.classList.add('text-red-600');
+                updateUI();
+                return;
+            }
+
+            appliedPromo = found;
+            const desc = found.type === 'percent' ? `خصم ${found.value}%` : `خصم ${Number(found.value).toLocaleString()} د.ع`;
+            msgEl.textContent = `✅ تم تفعيل الكود (${found.code}) — ${desc}`;
+            msgEl.classList.add('text-green-700');
+            updateUI();
+        };
+
+        function calculateOrderTotals() {
+            let subtotal = 0, count = 0;
+            for (let id in cart) {
+                subtotal += cart[id].qty * cart[id].price;
+                count += cart[id].qty;
+            }
+
+            let deliveryFee = 0;
+            const freeMin = Number(storeConfig.freeDeliveryMin) || 0;
+            const freeHintEl = document.getElementById('free-delivery-hint');
+            if (orderMethod === 'delivery') {
+                const sel = document.getElementById('cust-zone');
+                const opt = sel && sel.selectedOptions ? sel.selectedOptions[0] : null;
+                const baseFee = opt ? (Number(opt.dataset.fee) || 0) : 0;
+                if (freeMin > 0 && subtotal >= freeMin) {
+                    deliveryFee = 0;
+                    freeHintEl.textContent = `🎉 حصلت على توصيل مجاني لأن طلبك تجاوز ${freeMin.toLocaleString()} د.ع`;
+                    freeHintEl.classList.remove('hidden');
+                } else if (freeMin > 0 && subtotal > 0) {
+                    deliveryFee = baseFee;
+                    freeHintEl.textContent = `💡 أضف مواد بقيمة ${(freeMin - subtotal).toLocaleString()} د.ع للحصول على توصيل مجاني`;
+                    freeHintEl.classList.remove('hidden');
+                } else {
+                    deliveryFee = baseFee;
+                    freeHintEl.classList.add('hidden');
+                }
+            } else {
+                freeHintEl.classList.add('hidden');
+            }
+
+            let discount = 0;
+            if (appliedPromo && subtotal > 0) {
+                if (appliedPromo.type === 'percent') {
+                    discount = Math.round(subtotal * (Number(appliedPromo.value) || 0) / 100);
+                } else {
+                    discount = Math.min(subtotal, Number(appliedPromo.value) || 0);
+                }
+            }
+
+            const total = Math.max(0, subtotal + deliveryFee - discount);
+            return { subtotal, count, deliveryFee, discount, total };
+        }
 
         window.updateQty = function(n, c, p) {
             const productObj = allProducts.find(item => item.name === n);
@@ -523,15 +920,32 @@
             if (!document.getElementById('order-modal').classList.contains('hidden')) {
                 renderCartSummary();
             }
+            if (detailProductId && !document.getElementById('product-detail-modal').classList.contains('hidden')) {
+                const detailProd = allProducts.find(item => item.id === detailProductId);
+                if (detailProd) syncDetailActionArea(detailProd);
+            }
         };
 
         function updateUI() {
-            let t = 0, c = 0;
-            for (let id in cart) { t += cart[id].qty * cart[id].price; c += cart[id].qty; }
-            document.getElementById('total-price').innerText = t.toLocaleString();
-            document.getElementById('final-price').innerText = t.toLocaleString();
-            document.getElementById('cart-count').innerText = c;
-            document.getElementById('cart-float').classList.toggle('hidden', c === 0);
+            const { subtotal, count, deliveryFee, discount, total } = calculateOrderTotals();
+            document.getElementById('total-price').innerText = subtotal.toLocaleString();
+            document.getElementById('subtotal-price').innerText = subtotal.toLocaleString();
+            document.getElementById('delivery-fee-display').innerText = orderMethod === 'pickup'
+                ? 'استلام من السنتر (0 د.ع)'
+                : (deliveryFee === 0 ? 'مجاني 🎉' : `${deliveryFee.toLocaleString()} د.ع`);
+
+            const discRow = document.getElementById('discount-row');
+            if (discount > 0 && appliedPromo) {
+                discRow.classList.remove('hidden');
+                document.getElementById('applied-promo-label').textContent = appliedPromo.code;
+                document.getElementById('discount-amount-display').textContent = discount.toLocaleString();
+            } else {
+                discRow.classList.add('hidden');
+            }
+
+            document.getElementById('final-price').innerText = total.toLocaleString();
+            document.getElementById('cart-count').innerText = count;
+            document.getElementById('cart-float').classList.toggle('hidden', count === 0);
             document.getElementById('editing-cart-banner').classList.toggle('hidden', !editingOrderId);
         }
 
@@ -576,7 +990,9 @@
         }
 
         window.openModal = function() {
+            loadCustomerProfileToForm();
             renderCartSummary();
+            updateUI();
             document.getElementById('order-form-error').classList.add('hidden');
             document.getElementById('editing-order-notice').classList.toggle('hidden', !editingOrderId);
             document.getElementById('modal-title').textContent = editingOrderId ? "✏️ تعديل الطلب الحالي" : "عربة التسوق وتثبيت الطلب 📋";
@@ -591,8 +1007,9 @@
         window.cancelEditMode = function() {
             editingOrderId = null;
             cart = {};
-            document.getElementById('cust-address').value = '';
-            document.getElementById('cust-phone').value = '';
+            appliedPromo = null;
+            document.getElementById('promo-code-input').value = '';
+            document.getElementById('promo-status-msg').classList.add('hidden');
             document.getElementById('editing-order-notice').classList.add('hidden');
             updateUI();
             render();
@@ -606,54 +1023,66 @@
         }
 
         window.confirmOrder = async function() {
+            const custName = document.getElementById('cust-name').value.trim();
             const addr = document.getElementById('cust-address').value.trim();
             const phone = document.getElementById('cust-phone').value.trim();
+            const notes = document.getElementById('cust-notes').value.trim();
+            const zoneName = orderMethod === 'delivery' ? document.getElementById('cust-zone').value : 'استلام من السنتر';
             document.getElementById('order-form-error').classList.add('hidden');
 
             const entries = Object.entries(cart);
             if (!entries.length) {
                 return showOrderFormError("السلة فارغة! أضف مادة واحدة على الأقل قبل تأكيد الطلب.");
             }
-            if (!addr) {
-                return showOrderFormError("حقل العنوان مطلوب حصراً، يرجى كتابة العنوان.");
+            if (orderMethod === 'delivery' && !addr) {
+                return showOrderFormError("حقل العنوان مطلوب حصراً عند اختيار التوصيل للمنزل.");
             }
             if (!phone) {
                 return showOrderFormError("حقل رقم الهاتف مطلوب حصراً، يرجى كتابة رقم الهاتف.");
             }
 
-            let total = 0;
-            const itemsList = entries.map(([name, info]) => {
-                const sub = info.qty * info.price;
-                total += sub;
-                return { name, qty: info.qty, price: info.price };
-            });
+            const { subtotal, deliveryFee, discount, total } = calculateOrderTotals();
+            const itemsList = entries.map(([name, info]) => ({ name, qty: info.qty, price: info.price }));
 
-            const combinedAddress = `${addr} | هاتف: ${phone}`;
+            const displayAddr = orderMethod === 'pickup'
+                ? `استلام من السنتر${addr ? ' (' + addr + ')' : ''}`
+                : `${zoneName} - ${addr}`;
+            const combinedAddress = `${custName ? custName + ' | ' : ''}${displayAddr} | هاتف: ${phone}${notes ? ' | ملاحظة: ' + notes : ''}`;
+
+            saveCustomerProfile({ name: custName, address: addr, phone, zone: zoneName });
+
             const btn = document.getElementById('confirm-order-btn');
             btn.disabled = true;
             btn.textContent = "جاري الحفظ...";
+
+            const orderPayload = {
+                items: itemsList,
+                subtotal,
+                deliveryFee,
+                discount,
+                promoCode: appliedPromo ? appliedPromo.code : '',
+                total,
+                orderMethod,
+                deliveryZone: zoneName,
+                customerName: custName,
+                address: combinedAddress,
+                customerAddress: addr,
+                customerPhone: phone,
+                notes,
+                status: "قيد الانتظار"
+            };
 
             try {
                 let activeOrderId = editingOrderId;
                 if (activeOrderId) {
                     await updateDoc(doc(db, "orders", activeOrderId), {
-                        items: itemsList,
-                        total,
-                        address: combinedAddress,
-                        customerAddress: addr,
-                        customerPhone: phone,
-                        status: "قيد الانتظار",
+                        ...orderPayload,
                         isEdited: true,
                         updatedAt: Date.now()
                     });
                 } else {
                     const docRef = await addDoc(collection(db, "orders"), {
-                        items: itemsList,
-                        total,
-                        address: combinedAddress,
-                        customerAddress: addr,
-                        customerPhone: phone,
-                        status: "قيد الانتظار",
+                        ...orderPayload,
                         createdAt: Date.now()
                     });
                     activeOrderId = docRef.id;
@@ -666,11 +1095,14 @@
 
                 lastConfirmedOrderId = activeOrderId;
                 editingOrderId = null;
+                appliedPromo = null;
+                document.getElementById('promo-code-input').value = '';
+                document.getElementById('promo-status-msg').classList.add('hidden');
                 cart = {};
                 updateUI();
                 render();
                 closeModal();
-                openSuccessModal(activeOrderId, itemsList, total, addr, phone);
+                openSuccessModal(activeOrderId, orderPayload);
             } catch (e) {
                 console.warn("تعذر حفظ الطلب في Firestore:", e);
                 showOrderFormError("تعذر حفظ الطلب حالياً، تحقق من الاتصال وحاول مرة أخرى.");
@@ -680,15 +1112,20 @@
             }
         };
 
-        function openSuccessModal(orderId, itemsList, total, addr, phone) {
+        function openSuccessModal(orderId, payload) {
             document.getElementById('confirmed-order-code').textContent = "#" + orderId.slice(0, 6).toUpperCase();
             document.getElementById('confirmed-order-details').innerHTML = `
-                <div>📍 العنوان: ${addr}</div>
-                <div>📞 الهاتف: ${phone}</div>
+                ${payload.customerName ? `<div>👤 الاسم: ${payload.customerName}</div>` : ''}
+                <div>🚚 الاستلام: ${payload.orderMethod === 'pickup' ? 'من السنتر مباشرة' : 'توصيل (' + payload.deliveryZone + ')'}</div>
+                ${payload.customerAddress ? `<div>📍 العنوان: ${payload.customerAddress}</div>` : ''}
+                <div>📞 الهاتف: ${payload.customerPhone}</div>
+                ${payload.notes ? `<div>📝 ملاحظة: ${payload.notes}</div>` : ''}
                 <div class="border-t pt-1.5 mt-1.5 space-y-1">
-                    ${itemsList.map(i => `<div>• ${i.name} (×${i.qty}) = ${(i.qty * i.price).toLocaleString()} د.ع</div>`).join('')}
+                    ${payload.items.map(i => `<div>• ${i.name} (×${i.qty}) = ${(i.qty * i.price).toLocaleString()} د.ع</div>`).join('')}
                 </div>
-                <div class="border-t pt-1.5 mt-1.5 text-blue-900 font-black">الإجمالي: ${Number(total).toLocaleString()} د.ع</div>
+                ${payload.deliveryFee > 0 ? `<div>🛵 التوصيل: ${payload.deliveryFee.toLocaleString()} د.ع</div>` : ''}
+                ${payload.discount > 0 ? `<div class="text-green-700">🎟️ الخصم: -${payload.discount.toLocaleString()} د.ع</div>` : ''}
+                <div class="border-t pt-1.5 mt-1.5 text-blue-900 font-black">الإجمالي: ${Number(payload.total).toLocaleString()} د.ع</div>
             `;
             document.getElementById('success-modal').classList.remove('hidden');
         }
@@ -720,16 +1157,16 @@
                 cart[item.name] = { qty: parseInt(item.qty) || 1, price: parseInt(item.price) || 0 };
             });
 
-            let extractedAddr = order.customerAddress || "";
-            let extractedPhone = order.customerPhone || "";
-            if (!extractedAddr && order.address) {
-                const parts = String(order.address).split("| هاتف:");
-                extractedAddr = (parts[0] || "").trim();
-                extractedPhone = (parts[1] || "").trim();
+            document.getElementById('cust-name').value = order.customerName || "";
+            document.getElementById('cust-address').value = order.customerAddress || "";
+            document.getElementById('cust-phone').value = order.customerPhone || "";
+            document.getElementById('cust-notes').value = order.notes || "";
+            setOrderMethod(order.orderMethod || 'delivery');
+            if (order.deliveryZone) {
+                const sel = document.getElementById('cust-zone');
+                if (Array.from(sel.options).some(o => o.value === order.deliveryZone)) sel.value = order.deliveryZone;
             }
 
-            document.getElementById('cust-address').value = extractedAddr;
-            document.getElementById('cust-phone').value = extractedPhone;
             editingOrderId = orderId;
             closeMyOrdersModal();
             updateUI();
