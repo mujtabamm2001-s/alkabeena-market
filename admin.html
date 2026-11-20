@@ -99,22 +99,29 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">رفع صورة من الجهاز (Cloudinary)</label>
-                            <input type="file" id="prod-image-file" accept="image/*" onchange="uploadImageToCloudinary(this)" class="w-full p-2 rounded-xl border text-xs font-bold bg-slate-50">
+                            <label class="block text-xs font-bold text-slate-700 mb-1">رفع صور من الجهاز (يمكن اختيار أكثر من صورة أو رفعها تباعاً)</label>
+                            <input type="file" id="prod-image-file" accept="image/*" multiple onchange="uploadImagesToCloudinary(this)" class="w-full p-2 rounded-xl border text-xs font-bold bg-slate-50">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">رابط الصورة (يُملأ تلقائياً أو يدوياً)</label>
-                            <input type="url" id="prod-image-url" placeholder="https://res.cloudinary.com/..." class="w-full p-3 rounded-xl border font-bold text-xs">
+                            <label class="block text-xs font-bold text-slate-700 mb-1">إضافة رابط صورة يدوياً</label>
+                            <div class="flex gap-2">
+                                <input type="url" id="prod-image-url" placeholder="https://res.cloudinary.com/..." class="w-full p-3 rounded-xl border font-bold text-xs">
+                                <button type="button" onclick="addManualImageUrl()" class="px-3.5 rounded-xl bg-yellow-400 text-blue-900 font-black text-xs shrink-0">+ إضافة</button>
+                            </div>
                         </div>
-                        <div class="md:col-span-2 lg:col-span-3 flex items-center justify-between pt-2">
-                            <div class="flex items-center gap-3">
-                                <img id="prod-preview" src="https://ui-avatars.com/api/?name=K&background=facc15&color=1e3a8a" class="w-14 h-14 rounded-2xl object-cover border">
+
+                        <!-- معاينة وإدارة صور المنتج المتعددة -->
+                        <div class="md:col-span-2 lg:col-span-3 bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                            <div class="flex flex-wrap justify-between items-center gap-2">
+                                <span class="text-xs font-black text-blue-900">🖼️ صور المنتج (<span id="prod-images-count">0</span>) — الأولى هي الصورة الرئيسية</span>
                                 <span id="upload-status" class="text-xs font-bold text-blue-900"></span>
                             </div>
-                            <div class="flex gap-2">
-                                <button type="button" onclick="resetProductForm()" class="px-5 py-3 rounded-2xl bg-slate-200 text-slate-800 font-bold text-sm">إلغاء</button>
-                                <button type="submit" id="save-prod-btn" class="px-7 py-3 rounded-2xl bg-blue-900 text-yellow-400 font-black text-sm shadow">حفظ المادة</button>
-                            </div>
+                            <div id="prod-images-gallery" class="flex flex-wrap gap-3"></div>
+                        </div>
+
+                        <div class="md:col-span-2 lg:col-span-3 flex items-center justify-end gap-2 pt-1">
+                            <button type="button" onclick="resetProductForm()" class="px-5 py-3 rounded-2xl bg-slate-200 text-slate-800 font-bold text-sm">إلغاء</button>
+                            <button type="submit" id="save-prod-btn" class="px-7 py-3 rounded-2xl bg-blue-900 text-yellow-400 font-black text-sm shadow">حفظ المادة</button>
                         </div>
                     </form>
                 </div>
@@ -136,7 +143,7 @@
 
             <!-- قسم الإعدادات -->
             <section id="sec-settings" class="hidden bg-white rounded-3xl p-6 shadow-sm border border-slate-200 max-w-2xl">
-                <h2 class="text-lg font-black text-blue-900 mb-4">🛠️ إعدادات المتجر والمساعد</h2>
+                <h2 class="text-lg font-black text-blue-900 mb-4">🛠️ إعدادات المتجر والمساعد والشريط المتحرك</h2>
                 <div class="space-y-4">
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">اسم المتجر</label>
@@ -149,6 +156,10 @@
                     <div>
                         <label class="block text-xs font-bold text-slate-700 mb-1">رسالة الترحيب في المساعد الذكي</label>
                         <input type="text" id="set-bot-welcome" class="w-full p-3 rounded-xl border font-bold text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">عبارات الشريط المتحرك العلوي (افصل بين العبارات بـ | أو سطر جديد)</label>
+                        <textarea id="set-ticker-messages" rows="3" placeholder="مثال: 🚚 توصيل سريع داخل كربلاء | ⭐ عروض يومية مستمرة | ✏️ إمكانية تعديل الطلب بسهولة" class="w-full p-3 rounded-xl border font-bold text-sm"></textarea>
                     </div>
                     <div class="flex items-center gap-3">
                         <input type="checkbox" id="set-store-open" class="w-5 h-5">
@@ -198,6 +209,11 @@
         const OWNER_EMAIL = "mujtaba.mm85@gmail.com";
         const CLOUDINARY_CLOUD_NAME = "rd9c0zmh";
         const CLOUDINARY_UPLOAD_PRESET = "alkabeena_products";
+        const DEFAULT_TICKER_MESSAGES = [
+            "🚚 توصيل سريع داخل كربلاء — ماركت الكابينة",
+            "⭐ تسوق بذكاء وسهولة — مواد غذائية ومنزلية متكاملة",
+            "✏️ إمكانية تعديل طلبك بسهولة بعد التأكيد"
+        ];
 
         const firebaseConfig = {
             apiKey: "AIzaSyAqhKx_pxcaY_ZBOas8TrvYWwxY_2nqTjY",
@@ -213,9 +229,10 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        let currentUserSession = null; // { name, email, code, role, type }
+        let currentUserSession = null;
         let productsCache = [];
         let teamCache = [];
+        let currentProductImages = [];
 
         window.switchLoginMode = function(mode) {
             const isEmail = mode === 'email';
@@ -340,6 +357,7 @@
                 document.getElementById('tab-settings').classList.add('hidden');
             }
 
+            renderProductImagesGallery();
             listenProducts();
             listenOrders();
             listenSettings();
@@ -353,31 +371,89 @@
             });
         };
 
-        window.uploadImageToCloudinary = async function(input) {
-            const file = input.files[0];
-            if (!file) return;
+        function renderProductImagesGallery() {
+            document.getElementById('prod-images-count').textContent = currentProductImages.length;
+            const gallery = document.getElementById('prod-images-gallery');
+            if (!currentProductImages.length) {
+                gallery.innerHTML = `
+                    <div class="flex items-center gap-3 text-xs font-bold text-slate-500">
+                        <img src="https://ui-avatars.com/api/?name=K&background=facc15&color=1e3a8a" class="w-14 h-14 rounded-2xl object-cover border">
+                        <span>لم تُضف صور بعد — سيتم استخدام صورة افتراضية إذا لم تضف صورة.</span>
+                    </div>
+                `;
+                return;
+            }
+
+            gallery.innerHTML = currentProductImages.map((url, idx) => `
+                <div class="relative w-20 h-20 rounded-2xl overflow-hidden border-2 ${idx === 0 ? 'border-blue-900' : 'border-slate-200'} bg-white shadow-sm group">
+                    <img src="${url}" class="w-full h-full object-cover">
+                    ${idx === 0 ? '<span class="absolute bottom-0 inset-x-0 bg-blue-900/90 text-yellow-300 text-[10px] font-black text-center py-0.5">رئيسية</span>' : ''}
+                    <div class="absolute top-1 right-1 flex gap-1">
+                        ${idx > 0 ? `<button type="button" onclick="makeMainImage(${idx})" title="جعلها رئيسية" class="w-5 h-5 rounded-full bg-yellow-400 text-blue-900 text-[10px] font-black flex items-center justify-center shadow">★</button>` : ''}
+                        <button type="button" onclick="removeProductImage(${idx})" title="حذف الصورة" class="w-5 h-5 rounded-full bg-red-600 text-white text-[10px] font-black flex items-center justify-center shadow">×</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.makeMainImage = function(idx) {
+            if (idx <= 0 || idx >= currentProductImages.length) return;
+            const [picked] = currentProductImages.splice(idx, 1);
+            currentProductImages.unshift(picked);
+            renderProductImagesGallery();
+        };
+
+        window.removeProductImage = function(idx) {
+            currentProductImages.splice(idx, 1);
+            renderProductImagesGallery();
+        };
+
+        window.addManualImageUrl = function() {
+            const input = document.getElementById('prod-image-url');
+            const url = input.value.trim();
+            if (!url) return;
+            if (!currentProductImages.includes(url)) {
+                currentProductImages.push(url);
+                renderProductImagesGallery();
+            }
+            input.value = '';
+        };
+
+        window.uploadImagesToCloudinary = async function(input) {
+            const files = Array.from(input.files || []);
+            if (!files.length) return;
             const statusEl = document.getElementById('upload-status');
-            statusEl.textContent = "⏳ جاري رفع الصورة إلى Cloudinary...";
+            let uploadedCount = 0;
 
-            const formData = new FormData();
-            formData.append("file", file);
-            formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                statusEl.textContent = `⏳ جاري رفع الصورة (${i + 1} من ${files.length}) إلى Cloudinary...`;
 
-            try {
-                const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
-                    method: "POST",
-                    body: formData
-                });
-                const data = await res.json();
-                if (data.secure_url) {
-                    document.getElementById('prod-image-url').value = data.secure_url;
-                    document.getElementById('prod-preview').src = data.secure_url;
-                    statusEl.textContent = "✅ تم رفع الصورة بنجاح";
-                } else {
-                    statusEl.textContent = "⚠️ فشل رفع الصورة، تأكد من إعداد الـ Preset";
+                const formData = new FormData();
+                formData.append("file", file);
+                formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+
+                try {
+                    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+                        method: "POST",
+                        body: formData
+                    });
+                    const data = await res.json();
+                    if (data.secure_url) {
+                        currentProductImages.push(data.secure_url);
+                        uploadedCount++;
+                        renderProductImagesGallery();
+                    }
+                } catch (e) {
+                    statusEl.textContent = "⚠️ خطأ في الاتصال بـ Cloudinary أثناء رفع إحدى الصور";
                 }
-            } catch (e) {
-                statusEl.textContent = "⚠️ خطأ في الاتصال بـ Cloudinary";
+            }
+
+            input.value = '';
+            if (uploadedCount > 0) {
+                statusEl.textContent = `✅ تم رفع ${uploadedCount} صورة بنجاح`;
+            } else if (!statusEl.textContent.includes("⚠️")) {
+                statusEl.textContent = "⚠️ فشل رفع الصورة، تأكد من إعداد الـ Preset";
             }
         };
 
@@ -385,14 +461,21 @@
             e.preventDefault();
             if (currentUserSession.role === "orders") return alert("صلاحيتك تقتصر على الطلبات وحالة التوفر.");
 
+            const manualUrl = document.getElementById('prod-image-url').value.trim();
+            if (manualUrl && !currentProductImages.includes(manualUrl)) {
+                currentProductImages.push(manualUrl);
+            }
+
             const id = document.getElementById('edit-product-id').value;
             const name = document.getElementById('prod-name').value.trim();
             const price = parseInt(document.getElementById('prod-price').value) || 0;
             const category = document.getElementById('prod-cat').value.trim() || "عام";
             const available = document.getElementById('prod-available').value === "true";
-            const img = document.getElementById('prod-image-url').value.trim() || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=facc15&color=1e3a8a`;
+            const fallbackImg = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=facc15&color=1e3a8a`;
+            const finalImages = currentProductImages.length ? [...currentProductImages] : [fallbackImg];
+            const img = finalImages[0];
 
-            const payload = { name, price, category, available, img, updatedAt: Date.now() };
+            const payload = { name, price, category, available, img, images: finalImages, updatedAt: Date.now() };
             if (id) {
                 await updateDoc(doc(db, "products", id), payload);
             } else {
@@ -410,8 +493,11 @@
             document.getElementById('prod-price').value = p.price;
             document.getElementById('prod-cat').value = p.category;
             document.getElementById('prod-available').value = String(p.available !== false);
-            document.getElementById('prod-image-url').value = p.img || '';
-            document.getElementById('prod-preview').src = p.img || '';
+            document.getElementById('prod-image-url').value = '';
+            currentProductImages = Array.isArray(p.images) && p.images.length
+                ? [...p.images]
+                : (p.img ? [p.img] : []);
+            renderProductImagesGallery();
             document.getElementById('product-form-title').textContent = "✏️ تعديل مادة: " + p.name;
             window.scrollTo({ top: 0, behavior: "smooth" });
         };
@@ -429,7 +515,8 @@
         window.resetProductForm = function() {
             document.getElementById('product-form').reset();
             document.getElementById('edit-product-id').value = '';
-            document.getElementById('prod-preview').src = 'https://ui-avatars.com/api/?name=K&background=facc15&color=1e3a8a';
+            currentProductImages = [];
+            renderProductImagesGallery();
             document.getElementById('upload-status').textContent = '';
             document.getElementById('product-form-title').textContent = "➕ إضافة مادة جديدة";
         };
@@ -449,16 +536,21 @@
             document.getElementById('products-count').textContent = list.length;
 
             const canEditFull = currentUserSession.role !== "orders";
-            document.getElementById('admin-products-list').innerHTML = list.map(p => `
+            document.getElementById('admin-products-list').innerHTML = list.map(p => {
+                const imgsCount = Array.isArray(p.images) && p.images.length ? p.images.length : (p.img ? 1 : 0);
+                return `
                 <div class="border rounded-2xl p-4 flex gap-3 items-center justify-between ${p.available === false ? 'bg-red-50/50 border-red-200' : 'bg-slate-50 border-slate-200'}">
                     <div class="flex items-center gap-3 min-w-0">
                         <img src="${p.img}" class="w-14 h-14 rounded-xl object-cover bg-white border shrink-0">
                         <div class="min-w-0">
                             <p class="font-black text-sm text-slate-800 truncate">${p.name}</p>
                             <p class="text-xs font-bold text-blue-900">${Number(p.price || 0).toLocaleString()} د.ع • <span class="text-slate-500">${p.category || 'عام'}</span></p>
-                            <span class="inline-block mt-1 text-[11px] font-bold px-2 py-0.5 rounded-full ${p.available === false ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">
-                                ${p.available === false ? 'نفذت الكمية' : 'متوفر'}
-                            </span>
+                            <div class="flex items-center gap-1.5 mt-1 flex-wrap">
+                                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${p.available === false ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}">
+                                    ${p.available === false ? 'نفذت الكمية' : 'متوفر'}
+                                </span>
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-900">${imgsCount} صورة</span>
+                            </div>
                         </div>
                     </div>
                     <div class="flex flex-col gap-1.5 shrink-0">
@@ -467,7 +559,8 @@
                         ${canEditFull ? `<button onclick="deleteProduct('${p.id}')" class="px-2.5 py-1 rounded-lg bg-red-100 text-red-700 text-xs font-bold">حذف</button>` : ''}
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         };
 
         function listenOrders() {
@@ -504,15 +597,26 @@
                 document.getElementById('set-store-name').value = d.storeName || "ماركت الكابينة";
                 document.getElementById('set-whatsapp').value = d.whatsapp || "9647760982880";
                 document.getElementById('set-bot-welcome').value = d.botWelcome || "يا هلا بيك بماركت الكابينة! شلون أكدر أساعدك اليوم؟ 😊";
+                const tickerArr = Array.isArray(d.tickerMessages) && d.tickerMessages.length
+                    ? d.tickerMessages
+                    : DEFAULT_TICKER_MESSAGES;
+                document.getElementById('set-ticker-messages').value = tickerArr.join(" | ");
                 document.getElementById('set-store-open').checked = d.isOpen !== false;
             });
         }
 
         window.saveStoreSettings = async function() {
+            const rawTicker = document.getElementById('set-ticker-messages').value || "";
+            const parsedTicker = rawTicker
+                .split(/\||\n/)
+                .map(s => s.trim())
+                .filter(Boolean);
+
             await setDoc(doc(db, "settings", "store"), {
                 storeName: document.getElementById('set-store-name').value.trim() || "ماركت الكابينة",
                 whatsapp: document.getElementById('set-whatsapp').value.trim() || "9647760982880",
                 botWelcome: document.getElementById('set-bot-welcome').value.trim(),
+                tickerMessages: parsedTicker.length ? parsedTicker : DEFAULT_TICKER_MESSAGES,
                 isOpen: document.getElementById('set-store-open').checked
             }, { merge: true });
             alert("تم حفظ إعدادات المتجر بنجاح.");
